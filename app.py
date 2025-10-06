@@ -101,6 +101,8 @@ def download_file():
 
 # --- F. Admin Giriş Rotası ---
 
+# app.py dosyasında bulunan F. Admin Giriş Rotası
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated:
@@ -109,7 +111,6 @@ def admin_login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        # Modeli artık gördüğü için hata vermez
         user = User.query.filter_by(username=username).first()
         
         if user and user.check_password(password):
@@ -117,6 +118,29 @@ def admin_login():
             return redirect(url_for('admin_dashboard'))
         else:
             flash('Kullanıcı adı veya şifre hatalı.', 'error')
+            # Hata durumunda da POST işleminden sonra tekrar login sayfasını göstermesi gerekir
+            # Ancak bu noktada bir return statementı yoksa hata oluşur.
+    
+    # !!! BURASI KRİTİK: GET isteği veya başarısız POST sonrası bu return çalışmalı !!!
+    return '''
+        <h1 style="text-align:center;">Admin Girişi</h1>
+        <form method="POST" style="max-width:300px; margin: 0 auto; padding:20px; border:1px solid #ccc;">
+            <label>Kullanıcı Adı:</label><br>
+            <input type="text" name="username" required><br><br>
+            <label>Şifre:</label><br>
+            <input type="password" name="password" required><br><br>
+            <button type="submit">Giriş Yap</button>
+        </form>
+        <p style="text-align:center; color:red;">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    {{ message }}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        </p>
+    '''
             
     # app.py dosyasına yeni rota ekleyin
 
