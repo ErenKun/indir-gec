@@ -1,0 +1,25 @@
+{{ '<' }}?xml version="1.0" encoding="UTF-8" {{ '?' }}>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+    <title>VideoİndiriciPro - Yeni Sürüm Bildirimleri</title>
+    <link>{{ url_for('index', _external=True) }}</link>
+    <description>VideoİndiriciPro uygulaması için yayınlanan yeni sürümler ve yama notları.</description>
+    <language>tr</language>
+    <atom:link href="{{ url_for('rss_feed', _external=True) }}" rel="self" type="application/rss+xml" />
+
+    {% for version in all_versions %}
+    <item>
+        <title>Sürüm v{{ version.version_number }} Yayınlandı!</title>
+        <link>{{ url_for('index', _external=True) }}#guncellemeler</link>
+        <guid>{{ version.version_number }}</guid>
+        <pubDate>{{ version.release_date.strftime('%a, %d %b %Y %H:%M:%S +0000') }}</pubDate>
+        <description>
+            <![CDATA[
+            {{ version.patch_notes | safe }}
+            <p><strong><a href="{{ url_for('download_file', _external=True) }}">Uygulamayı Hemen İndir</a></strong></p>
+            ]]>
+        </description>
+    </item>
+    {% endfor %}
+</channel>
+</rss>
