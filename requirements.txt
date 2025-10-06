@@ -1,4 +1,5 @@
 Flask
 Flask-SQLAlchemy
 Flask-Login
+pytz
 gunicorn # PythonAnywhere'da uygulamayı çalıştırmak için gereken sunucu
