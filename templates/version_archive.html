@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Sürüm Arşivi - {{ site_content['site_title'] }}{% endblock %}
+
+{% block content %}
+<header class="bg-gray-100 dark:bg-gray-900 py-16">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-4">Sürüm Arşivi</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-400">Yayınlanan tüm geçmiş sürümlerin yama notları ve detayları.</p>
+    </div>
+</header>
+
+<div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="space-y-10">
+        {% for version in archive_versions %}
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl border-l-4 border-red-500 transition-all hover:shadow-2xl">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                v{{ version.version_number }}
+                <span class="text-sm font-normal text-gray-500 ml-3">({{ version.release_date | ist_time }})</span>
+            </h2>
+            <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                {{ version.patch_notes | safe }}
+            </div>
+            <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                İndirme Sayısı: {{ version.download_count }}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not archive_versions %}
+        <p class="text-center text-gray-500 dark:text-gray-400">Şu anda arşivde aktif sürüm haricinde bir sürüm bulunmamaktadır.</p>
+    {% endif %}
+
+    <div class="mt-12 text-center">
+        <a href="{{ url_for('index') }}" class="text-red-600 hover:text-red-500 font-medium">← Ana Sayfaya Geri Dön</a>
+    </div>
+</div>
+{% endblock %}

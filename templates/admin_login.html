@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="tr" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İndirGeç | Admin Girişi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+        }
+    </style>
+</head>
+<body class="h-full">
+    <div class="min-h-full flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div class="sm:mx-auto sm:w-full sm:max-w-md">
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                İndirGeç Yönetim Paneli
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-600">
+                Lütfen giriş bilgilerinizi kullanın.
+            </p>
+        </div>
+
+        <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="bg-white py-8 px-4 shadow-2xl sm:rounded-lg sm:px-10 border-t-8 border-red-500">
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-4 space-y-2">
+                            {% for category, message in messages %}
+                                <p class="p-3 rounded-md text-sm bg-red-100 text-red-700 border-l-4 border-red-500">
+                                    {{ message }}
+                                </p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <form class="space-y-6" action="{{ url_for('admin_login') }}" method="POST">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700">Kullanıcı Adı</label>
+                        <div class="mt-1">
+                            <input id="username" name="username" type="text" required class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">Şifre</label>
+                        <div class="mt-1">
+                            <input id="password" name="password" type="password" required class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <a href="{{ url_for('index') }}" class="text-sm text-red-600 hover:text-red-500">
+                            ← Ana Sayfaya Dön
+                        </a>
+                    </div>
+
+                    <div>
+                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white gradient-bg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transform transition-transform hover:scale-[1.01]">
+                            Giriş Yap
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

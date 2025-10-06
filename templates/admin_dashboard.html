@@ -3,151 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Paneli - VideoİndiriciPro</title>
+    <title>Admin Dashboard | {% block title %}Genel Bakış{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .sidebar { min-width: 250px; }
-        .stat-card { transition: all 0.3s; }
-        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .accent-color { background-color: #ef4444; }
+        .accent-text { color: #ef4444; }
+        .sidebar-link { @apply flex items-center p-3 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200; }
+        .sidebar-link.active { @apply bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 font-semibold; }
+        /* Tema Yönetimi */
+        :root { color-scheme: light; }
+        .dark { color-scheme: dark; }
     </style>
+    <script>
+        // Tema Yönetimi
+        if (localStorage.adminTheme === 'dark' || (!('adminTheme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+
+        function toggleAdminTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.adminTheme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.adminTheme = 'dark';
+            }
+        }
+    </script>
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased min-h-screen flex">
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
     
-    <aside class="sidebar bg-gray-900 text-white p-6 flex flex-col space-y-4">
-        <h2 class="text-2xl font-bold border-b border-gray-700 pb-3">Yönetim</h2>
-        <a href="{{ url_for('index') }}" class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition">
-            <span>🚀 Siteyi Görüntüle</span>
-        </a>
-        <a href="{{ url_for('admin_dashboard') }}" class="flex items-center space-x-2 p-2 rounded-md bg-red-600 hover:bg-red-700 transition">
-            <span>⚙️ Dashboard</span>
-        </a>
-        <a href="{{ url_for('admin_logout') }}" class="flex items-center space-x-2 p-2 rounded-md bg-gray-700 hover:bg-red-500 transition mt-auto">
-            <span>🚪 Çıkış Yap</span>
-        </a>
-    </aside>
-
-    <main class="flex-grow p-8">
-        <h1 class="text-4xl font-extrabold mb-8">Admin Dashboard</h1>
+    <div class="flex h-screen">
         
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <ul class="mb-4 space-y-2">
-                    {% for category, message in messages %}
-                        <li class="p-3 rounded-md {% if category == 'error' %}bg-red-100 text-red-700 border-l-4 border-red-500{% elif category == 'success' %}bg-green-100 text-green-700 border-l-4 border-green-500{% endif %}">
-                            {{ message }}
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
-
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div class="stat-card bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
-                <p class="text-sm font-medium text-gray-500">Toplam İndirme Sayısı</p>
-                <p class="text-3xl font-bold mt-1">{{ total_downloads }}</p>
+        <aside class="w-64 bg-white dark:bg-gray-800 shadow-xl p-4 flex flex-col justify-between">
+            <div>
+                <h1 class="text-3xl font-bold accent-text mb-8 border-b pb-4">
+                    Admin Panel
+                </h1>
+                <nav class="space-y-2">
+                    <a href="{{ url_for('admin_dashboard') }}" 
+                       class="sidebar-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11v10a1 1 0 001 1h3M12 3v18"></path></svg>
+                        Genel Bakış
+                    </a>
+                    <a href="{{ url_for('admin_content') }}" 
+                       class="sidebar-link {% if request.endpoint == 'admin_content' %}active{% endif %}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2h14z"></path></svg>
+                        İçerik Yönetimi
+                    </a>
+                </nav>
             </div>
-            <div class="stat-card bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
-                <p class="text-sm font-medium text-gray-500">Aktif Sürüm</p>
-                <p class="text-3xl font-bold mt-1">{{ latest_version.version_number if latest_version else 'Yok' }}</p>
+
+            <div class="space-y-3">
+                <button onclick="toggleAdminTheme()" class="sidebar-link w-full justify-center">
+                    <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    Koyu/Açık Tema
+                </button>
+                <a href="{{ url_for('admin_logout') }}" class="sidebar-link text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3v-4a3 3 0 013-3h3a3 3 0 013 3v1"></path></svg>
+                    Çıkış Yap
+                </a>
             </div>
-            <div class="stat-card bg-white p-6 rounded-lg shadow-lg border-t-4 border-green-500">
-                <p class="text-sm font-medium text-gray-500">Yönetici</p>
-                <p class="text-3xl font-bold mt-1">{{ current_user.username }}</p>
+        </aside>
+
+        <div class="flex-1 overflow-y-auto p-8">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-6 space-y-2">
+                        {% for category, message in messages %}
+                            <p class="p-3 rounded-md text-sm border-l-4 
+                                {% if category == 'error' %} bg-red-100 text-red-700 border-red-500 {% elif category == 'success' %} bg-green-100 text-green-700 border-green-500 {% else %} bg-blue-100 text-blue-700 border-blue-500 {% endif %}">
+                                {{ message }}
+                            </p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block admin_content %}
+            
+            <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-8">
+                Genel Yönetim Paneli
+            </h1>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border-t-4 border-red-500">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Toplam İndirme</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ total_downloads }}</p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border-t-4 border-green-500">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Aktif Sürüm</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                        {% if latest_version %}v{{ latest_version.version_number }}{% else %}Yok{% endif %}
+                    </p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border-t-4 border-yellow-500">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Yeni Geri Bildirim</p>
+                    <p class="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{{ unprocessed_feedback|length }}</p>
+                </div>
             </div>
-        </section>
 
-        <section class="bg-white p-8 rounded-lg shadow-2xl mb-12 border-t-8 border-blue-600">
-    <h2 class="text-2xl font-bold mb-6 flex justify-between items-center">
-        Yeni Geri Bildirimler
-        <span class="bg-red-500 text-white text-sm px-3 py-1 rounded-full font-semibold">{{ unprocessed_feedback | length }} okunmamış</span>
-    </h2>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 border-b pb-2">Yeni Geri Bildirimler (Okunmadı)</h2>
+            <div class="space-y-4 mb-10">
+                {% for item in unprocessed_feedback %}
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md border-l-4 border-yellow-500">
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Kimden: {{ item.email }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ item.timestamp | ist_time }}</p>
+                    </div>
+                    <p class="mt-2 text-gray-800 dark:text-gray-200">{{ item.message }}</p>
+                    <div class="mt-3 flex space-x-3">
+                        <form method="POST" action="{{ url_for('admin_mark_read', feedback_id=item.id) }}" class="inline">
+                            <button type="submit" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium">
+                                Okundu Olarak İşaretle
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_delete_feedback', feedback_id=item.id) }}" class="inline" onsubmit="return confirm('Bu geri bildirim kalıcı olarak silinecek. Emin misiniz?');">
+                            <button type="submit" class="text-xs text-red-600 dark:text-red-400 hover:text-red-500 font-medium">
+                                Sil
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
 
-    {% if unprocessed_feedback %}
-    <div class="space-y-4">
-        {% for item in unprocessed_feedback %}
-        <div class="p-4 border border-gray-200 rounded-lg bg-yellow-50/50 hover:bg-yellow-100 transition">
-            <p class="text-sm font-semibold">Gönderen: {{ item.email or 'Anonim' }}</p>
-            <p class="text-xs text-gray-500 mb-2">Tarih: {{ item.timestamp.strftime('%d %B %Y %H:%M') }}</p>
-            <p class="text-gray-800">{{ item.message }}</p>
-            <button class="mt-2 text-xs text-blue-600 hover:underline">Okundu Olarak İşaretle</button>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <p class="text-gray-500">Tebrikler! Okunmamış yeni geri bildirim yok.</p>
-    {% endif %}
-</section>
+                {% if not unprocessed_feedback %}
+                <p class="text-center text-gray-500 dark:text-gray-400 p-4">Okunmamış yeni geri bildirim yok.</p>
+                {% endif %}
+            </div>
 
-        <section class="bg-white p-8 rounded-lg shadow-2xl mb-12 border-t-8 border-red-600">
-            <h2 class="text-2xl font-bold mb-6">Yeni Sürüm Yayınla / İçerik Yönetimi</h2>
-            <form method="POST" action="{{ url_for('admin_add_version') }}" class="space-y-4">
-                
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 border-b pb-2">Yeni Sürüm Yayınla</h2>
+            <form method="POST" action="{{ url_for('admin_add_version') }}" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl space-y-4">
                 <div>
-                    <label for="version_number" class="block text-sm font-medium text-gray-700">Sürüm Numarası (Örn: 1.0.2)</label>
-                    <input type="text" name="version_number" id="version_number" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-red-500 focus:border-red-500">
+                    <label for="version_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sürüm Numarası (Örn: 1.0.1)</label>
+                    <input type="text" id="version_number" name="version_number" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 p-2">
                 </div>
-
                 <div>
-                    <label for="download_url" class="block text-sm font-medium text-gray-700">İndirme Linki (Drive/Github) (3)</label>
-                    <input type="url" name="download_url" id="download_url" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-red-500 focus:border-red-500" placeholder="https://drive.google.com/link/to/file">
+                    <label for="download_url" class="block text-sm font-medium text-gray-700 dark:text-gray-300">İndirme Linki (Google Drive, GitHub vb.)</label>
+                    <input type="text" id="download_url" name="download_url" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 p-2">
+                    <p class="mt-1 text-xs text-gray-500">Not: Başında "http" zorunlu değildir.</p>
                 </div>
-                
                 <div>
-                    <label for="patch_notes" class="block text-sm font-medium text-gray-700">Yama Notları (2) (HTML veya Basit Metin)</label>
-                    <textarea name="patch_notes" id="patch_notes" rows="6" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-red-500 focus:border-red-500" placeholder="<li>Yeni Özellik: Hata raporlama eklendi.</li>&#10;<li>Düzeltme: İndirme hatası giderildi.</li>"></textarea>
-                    <p class="text-xs text-gray-500 mt-1">Lütfen madde işaretleri için `<li>...</li>` kullanın veya düz metin girin.</p>
+                    <label for="patch_notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Yama Notları (HTML / Markdown kullanılabilir)</label>
+                    <textarea id="patch_notes" name="patch_notes" rows="6" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 p-2"></textarea>
                 </div>
-
-                <div class="flex items-center">
-                    <input type="checkbox" name="is_active" id="is_active" checked class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
-                    <label for="is_active" class="ml-2 block text-sm font-medium text-gray-900">
-                        Aktif Sürüm Olarak Yayınla (Uygulama Hizmet Durumu: {{ '✅' if latest_version and latest_version.is_active else '❌' }}) (4)
-                    </label>
+                <div class="flex items-center space-x-3">
+                    <input id="is_active" name="is_active" type="checkbox" checked class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
+                    <label for="is_active" class="text-sm font-medium text-gray-700 dark:text-gray-300">Hemen Aktif Sürüm Yap (Mevcut aktif sürümü pasif yapar)</label>
                 </div>
-                
-                <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-300">
-                    Sürümü Kaydet ve Yayınla
+                <button type="submit" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white accent-color hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                    Sürümü Yayınla
                 </button>
             </form>
-        </section>
 
-        <section class="bg-white p-8 rounded-lg shadow-2xl">
-            <h2 class="text-2xl font-bold mb-6">Mevcut Yayınlanmış Sürümler</h2>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sürüm</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Yayın Tarihi</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İndirme Sayısı (10)</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum (4)</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link (3)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for version in all_versions %}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ version.version_number }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ version.release_date.strftime('%d.%m.%Y') }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-semibold">{{ version.download_count }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ 'bg-green-100 text-green-800' if version.is_active else 'bg-red-100 text-red-800' }}">
-                                    {{ 'Aktif' if version.is_active else 'Pasif' }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 hover:text-red-700 truncate max-w-xs">
-                                <a href="{{ version.download_url }}" target="_blank">{{ version.download_url }}</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-12 mb-6 border-b pb-2">Yayınlanmış Sürümler</h2>
+            <div class="space-y-4">
+                {% for version in all_versions %}
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md flex justify-between items-start 
+                    {% if version.is_active %} border-l-4 border-red-600 {% else %} border-l-4 border-gray-400 {% endif %}">
+                    <div>
+                        <p class="text-lg font-bold text-gray-900 dark:text-white">v{{ version.version_number }} 
+                            {% if version.is_active %}<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-800">AKTİF</span>{% endif %}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Yayınlanma: {{ version.release_date | ist_time }} | İndirme: {{ version.download_count }}</p>
+                        <div class="mt-3 text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
+                            {{ version.patch_notes | safe }}
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin_delete_version', version_id=version.id) }}" onsubmit="return confirm('Sürüm v{{ version.version_number }} silinecek. Emin misiniz?');">
+                        <button type="submit" class="text-xs text-red-600 dark:text-red-400 hover:text-red-500 font-medium">
+                            Sil
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
             </div>
-            {% if not all_versions %}
-                <p class="text-center py-6 text-gray-500">Henüz hiçbir sürüm yayınlanmadı.</p>
-            {% endif %}
-        </section>
 
-    </main>
+            {% endblock %}
+        </div>
+    </div>
 </body>
 </html>
