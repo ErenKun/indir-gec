@@ -1,0 +1,2 @@
+# indirge-
+indir geç :)
