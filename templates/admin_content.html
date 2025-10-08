@@ -2,48 +2,52 @@
 {% block title %}İçerik Yönetimi{% endblock %}
 
 {% block admin_content %}
-<h2 class="text-2xl font-bold mb-6 border-b pb-2">Site İçerik Yönetimi</h2>
+<h2 class="text-2xl font-bold mb-6 border-b dark:border-gray-700 pb-2">Site İçerik Yönetimi</h2>
 
 <form method="POST" action="{{ url_for('admin_content') }}" class="space-y-8">
     
-    <div class="bg-white p-6 rounded-lg shadow-xl border-t-4 border-accent-color">
-        <h3 class="text-xl font-semibold mb-4 text-gray-700">Genel Metinler ve Başlıklar</h3>
-        {% for item in content_items %}
-        <div class="mb-4">
-            <label for="{{ item.key_name }}" class="block text-sm font-medium text-gray-700">
-                {{ item.key_name.replace('_', ' ').title() }}
-            </label>
-            {% if 'title' in item.key_name or 'link' in item.key_name %}
-                <input type="text" id="{{ item.key_name }}" name="{{ item.key_name }}" value="{{ item.content }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2">
-            {% else %}
-                <textarea id="{{ item.key_name }}" name="{{ item.key_name }}" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2">{{ item.content }}</textarea>
-            {% endif %}
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Genel Metinler ve Başlıklar</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for item in content_items %}
+            <div class="{% if 'bio' in item.key_name or 'subtitle' in item.key_name %}md:col-span-2{% endif %}">
+                <label for="content_{{ item.key_name }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ item.key_name.replace('_', ' ').title() }}
+                </label>
+                {% if 'title' in item.key_name or 'link' in item.key_name or 'name' in item.key_name %}
+                    <input type="text" id="content_{{ item.key_name }}" name="content_{{ item.key_name }}" value="{{ item.content }}" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2">
+                {% else %}
+                    <textarea id="content_{{ item.key_name }}" name="content_{{ item.key_name }}" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2">{{ item.content }}</textarea>
+                {% endif %}
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 
-    <div class="bg-white p-6 rounded-lg shadow-xl border-t-4 border-blue-500">
-        <h3 class="text-xl font-semibold mb-4 text-gray-700">Uygulama Hizmet Durumu</h3>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Uygulama Hizmet Durumu</h3>
+        {% if service_status %}
         <p class="text-sm text-gray-500 mb-4">Son Güncelleme: {{ service_status.updated_at | ist_time }}</p>
+        {% endif %}
 
-        <div class="mb-4">
-            <label for="status_level" class="block text-sm font-medium text-gray-700">Durum Seviyesi</label>
-            <select id="status_level" name="status_level" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2">
-                <option value="OK" {% if service_status.status_level == 'OK' %}selected{% endif %}>✅ Her Şey Yolunda</option>
-                <option value="MINOR_ISSUE" {% if service_status.status_level == 'MINOR_ISSUE' %}selected{% endif %}>⚠️ Ufak Sıkıntılar Var</option>
-                <option value="MAINTENANCE" {% if service_status.status_level == 'MAINTENANCE' %}selected{% endif %}>🛠️ Bakımda / Kapalı</option>
-            </select>
-        </div>
-
-        <div class="mb-4">
-            <label for="status_message" class="block text-sm font-medium text-gray-700">Açıklama Mesajı</label>
-            <textarea id="status_message" name="status_message" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2">{{ service_status.message }}</textarea>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1">
+                <label for="status_level" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Durum Seviyesi</label>
+                <select id="status_level" name="status_level" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2">
+                    <option value="OK" {% if service_status and service_status.status_level == 'OK' %}selected{% endif %}>✅ Her Şey Yolunda</option>
+                    <option value="MINOR_ISSUE" {% if service_status and service_status.status_level == 'MINOR_ISSUE' %}selected{% endif %}>⚠️ Ufak Sorunlar</option>
+                    <option value="MAINTENANCE" {% if service_status and service_status.status_level == 'MAINTENANCE' %}selected{% endif %}>🛠️ Bakımda</option>
+                </select>
+            </div>
+            <div class="md:col-span-2">
+                <label for="status_message" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Açıklama Mesajı</label>
+                <textarea id="status_message" name="status_message" rows="1" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2">{{ service_status.message if service_status else '' }}</textarea>
+            </div>
         </div>
     </div>
     
     <button type="submit" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-        Tümünü Kaydet
+        Değişiklikleri Kaydet
     </button>
 </form>
-
 {% endblock %}
