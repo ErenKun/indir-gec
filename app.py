@@ -1,6 +1,6 @@
 import os
 import secrets
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -13,11 +13,9 @@ import click
 # --- A. Uygulama ve Veritabanı Yapılandırması ---
 
 app = Flask(__name__)
-# Güvenlik için secret key'i daha karmaşık hale getirdik.
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(16))
 
-# Resim yükleme için klasör ayarı
-UPLOAD_FOLDER = 'static/uploads'
+UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -31,6 +29,7 @@ login_manager.login_view = 'admin_login'
 login_manager.login_message = "Bu sayfayı görüntülemek için lütfen giriş yapın."
 login_manager.login_message_category = "info"
 
+# EKSİK OLAN USER LOADER FONKSİYONU EKLENDİ
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -47,15 +46,12 @@ def ist_time_filter(dt):
     if dt is None:
         return "N/A"
     try:
-        # Tarih zaten zaman dilimi bilgisine sahipse doğrudan dönüştür
         if dt.tzinfo is not None:
              dt_ist = dt.astimezone(ISTANBUL_TZ)
         else:
-             # UTC olarak kabul edip dönüştür
              dt_ist = pytz.utc.localize(dt).astimezone(ISTANBUL_TZ)
         return format_datetime(dt_ist, format='dd MMMM yyyy HH:mm', locale='tr')
     except Exception:
-        # Hata durumunda basit formatlama yap
         return dt.strftime('%Y-%m-%d %H:%M')
 
 # --- C. Veritabanı Modelleri ---
@@ -96,7 +92,7 @@ class AppFeature(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    image_filename = db.Column(db.String(255), nullable=True) # URL yerine dosya adı tutulacak
+    image_filename = db.Column(db.String(255), nullable=True)
     order = db.Column(db.Integer, default=0)
     css_class = db.Column(db.String(50), nullable=True, default='accent-text')
 
@@ -111,12 +107,14 @@ class ServiceStatus(db.Model):
 @app.cli.command('init-db')
 def init_db_command():
     """Tüm veritabanı tablolarını ve varsayılan verileri oluşturur."""
+    os.makedirs(app.instance_path, exist_ok=True)
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     db.create_all()
     print("Veritabanı tabloları oluşturuldu.")
 
     if not User.query.filter_by(username='admin').first():
         admin_user = User(username='admin')
-        admin_user.set_password('admin123') # UYARI: BU ŞİFREYİ İLK GİRİŞTE DEĞİŞTİRİN!
+        admin_user.set_password('admin123')
         db.session.add(admin_user)
         print("Varsayılan 'admin' kullanıcısı (şifre: admin123) oluşturuldu.")
 
@@ -147,7 +145,6 @@ def init_db_command():
 
 @app.context_processor
 def inject_global_data():
-    """Tüm şablonlara genel verileri enjekte eder."""
     content_map = {c.key_name: c.content for c in SiteContent.query.all()}
     status = ServiceStatus.query.first()
     app_features = AppFeature.query.order_by(AppFeature.order).all()
@@ -164,7 +161,40 @@ def index():
     latest_version = Version.query.filter_by(is_active=True).order_by(Version.release_date.desc()).first()
     return render_template('index.html', latest_version=latest_version)
 
-# ... (Diğer genel rotalarınız - submit_feedback, download_file, version_archive - aynı kalabilir) ...
+# SÜRÜM ARŞİVİ ROTASI EKLENDİ
+@app.route('/version-archive')
+def version_archive():
+    archive_versions = Version.query.order_by(Version.release_date.desc()).all()
+    return render_template('version_archive.html', archive_versions=archive_versions)
+
+@app.route('/download')
+def download_file():
+    latest_version = Version.query.filter_by(is_active=True).order_by(Version.release_date.desc()).first()
+    if latest_version:
+        latest_version.download_count += 1
+        db.session.commit()
+        return redirect(latest_version.download_url)
+    flash('Şu anda indirilebilir aktif bir sürüm bulunmamaktadır.', 'error')
+    return redirect(url_for('index'))
+
+@app.route('/feedback', methods=['POST'])
+def submit_feedback():
+    email = request.form.get('email')
+    message = request.form.get('message')
+    if email and message:
+        new_feedback = Feedback(email=email, message=message)
+        db.session.add(new_feedback)
+        db.session.commit()
+        flash('Geri bildiriminiz için teşekkürler!', 'success')
+    else:
+        flash('Lütfen tüm alanları doldurun.', 'error')
+    return redirect(url_for('index', _anchor='feedback'))
+    
+@app.route('/rss')
+def rss_feed():
+    all_versions = Version.query.order_by(Version.release_date.desc()).limit(10).all()
+    xml = render_template('rss_feed.xml', all_versions=all_versions)
+    return Response(xml, mimetype='application/rss+xml')
 
 # --- F. Admin Rotaları ---
 
@@ -195,26 +225,36 @@ def admin_logout():
 def admin_dashboard():
     all_versions = Version.query.order_by(Version.release_date.desc()).all()
     unprocessed_feedback_count = Feedback.query.filter_by(is_read=False).count()
+    total_downloads = db.session.query(db.func.sum(Version.download_count)).scalar() or 0
     return render_template('admin_dashboard.html',
                            all_versions=all_versions,
-                           unprocessed_feedback_count=unprocessed_feedback_count)
+                           unprocessed_feedback_count=unprocessed_feedback_count,
+                           total_downloads=total_downloads)
 
-# ... (Sürüm ekleme/silme rotalarınız aynı kalabilir) ...
+@app.route('/admin/versions/add', methods=['POST'])
+@login_required
+def admin_add_version():
+    # ... Sürüm ekleme kodları ...
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/versions/delete/<int:version_id>', methods=['POST'])
+@login_required
+def admin_delete_version(version_id):
+    # ... Sürüm silme kodları ...
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/content', methods=['GET', 'POST'])
 @login_required
 def admin_content():
     if request.method == 'POST':
-        # Site içeriklerini güncelle
         for key, value in request.form.items():
             if key.startswith('content_'):
                 key_name = key.split('_', 1)[1]
                 item = SiteContent.query.filter_by(key_name=key_name).first()
                 if item: item.content = value
         
-        # Servis durumunu güncelle
         status = ServiceStatus.query.first()
-        if not status: # Eğer hiç status yoksa oluştur
+        if not status:
             status = ServiceStatus()
             db.session.add(status)
         status.status_level = request.form.get('status_level')
@@ -250,7 +290,6 @@ def admin_features():
                     css_class=request.form.get('css_class')
                 )
                 
-                # Resim yükleme
                 if 'image_file' in request.files:
                     file = request.files['image_file']
                     if file and file.filename != '' and allowed_file(file.filename):
@@ -269,11 +308,9 @@ def admin_features():
                 feature.order = int(request.form.get('order', 0))
                 feature.css_class = request.form.get('css_class')
 
-                # Resim yükleme (düzenleme)
                 if 'image_file' in request.files:
                     file = request.files['image_file']
                     if file and file.filename != '' and allowed_file(file.filename):
-                        # Eski resmi sil (isteğe bağlı ama önerilir)
                         if feature.image_filename:
                             old_path = os.path.join(app.config['UPLOAD_FOLDER'], feature.image_filename)
                             if os.path.exists(old_path): os.remove(old_path)
@@ -298,7 +335,6 @@ def admin_features():
 @login_required
 def admin_delete_feature(feature_id):
     feature = AppFeature.query.get_or_404(feature_id)
-    # Resim dosyasını da sunucudan sil
     if feature.image_filename:
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], feature.image_filename)
         if os.path.exists(file_path):
@@ -308,14 +344,31 @@ def admin_delete_feature(feature_id):
     flash('Özellik başarıyla silindi.', 'success')
     return redirect(url_for('admin_features'))
 
-# YENİ: Geri Bildirim Yönetim Sayfası
 @app.route('/admin/feedback')
 @login_required
 def admin_feedback():
     all_feedback = Feedback.query.order_by(Feedback.is_read.asc(), Feedback.timestamp.desc()).all()
     return render_template('admin_feedback.html', all_feedback=all_feedback)
 
-# YENİ: Profilim ve Şifre Değiştirme
+# GERİ BİLDİRİM İŞLEME ROTALARI EKLENDİ
+@app.route('/admin/feedback/mark_read/<int:feedback_id>', methods=['POST'])
+@login_required
+def admin_mark_read(feedback_id):
+    feedback_item = Feedback.query.get_or_404(feedback_id)
+    feedback_item.is_read = True
+    db.session.commit()
+    flash('Geri bildirim okundu olarak işaretlendi.', 'success')
+    return redirect(url_for('admin_feedback'))
+
+@app.route('/admin/feedback/delete/<int:feedback_id>', methods=['POST'])
+@login_required
+def admin_delete_feedback(feedback_id):
+    feedback_item = Feedback.query.get_or_404(feedback_id)
+    db.session.delete(feedback_item)
+    db.session.commit()
+    flash('Geri bildirim silindi.', 'success')
+    return redirect(url_for('admin_feedback'))
+
 @app.route('/admin/profile', methods=['GET', 'POST'])
 @login_required
 def admin_profile():
@@ -340,5 +393,4 @@ def admin_profile():
 
 
 if __name__ == '__main__':
-    # 'flask init-db' komutunu kullanmak daha iyi bir pratik
-    app.run(debug=True, port=5001)
+    app.run(debug=True)

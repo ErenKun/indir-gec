@@ -3,32 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ site_content['site_title'] }}</title>
+    <title>{{ site_content.get('site_title', 'İndirGeç') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v3.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         html { scroll-behavior: smooth; }
         .accent-color { background-color: #ef4444; }
         .accent-text { color: #ef4444; }
-        :root { color-scheme: light; }
-        .dark { color-scheme: dark; }
         .slider-clip { clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%); }
-    </style>
-    <script>
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
+        
+        /* Dark mode default styles */
+        :root {
+            color-scheme: dark;
         }
-        function toggleTheme() {
-            if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark');
-                localStorage.theme = 'light';
+        html.light {
+            color-scheme: light;
+        }
+    </style>
+    <!-- KARANLIK/AYDINLIK MOD SCRİPTİ GÜNCELLENDİ -->
+    <script>
+        // Sayfa yüklenirken temayı ayarla
+        function applyTheme() {
+            if (localStorage.theme === 'light' || (!('theme' in localStorage) && !window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('light');
             } else {
-                document.documentElement.classList.add('dark');
-                localStorage.theme = 'dark';
+                document.documentElement.classList.remove('light');
             }
         }
+
+        // Tema değiştirme fonksiyonu
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('light')) {
+                document.documentElement.classList.remove('light');
+                localStorage.theme = 'dark';
+            } else {
+                document.documentElement.classList.add('light');
+                localStorage.theme = 'light';
+            }
+        }
+        applyTheme(); // Sayfa ilk yüklendiğinde temayı uygula
     </script>
 </head>
 <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
@@ -47,14 +60,15 @@
             </div>
             <div class="flex items-center space-x-4">
                 <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="Temayı Değiştir">
-                    <svg class="h-6 w-6 text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    <svg class="h-6 w-6 text-gray-700 dark:text-gray-300 block light:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    <svg class="h-6 w-6 text-gray-700 dark:text-gray-300 hidden light:block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                 </button>
             </div>
         </nav>
     </header>
 
     <main>
-        {% if service_status.status_level != 'OK' %}
+        {% if service_status and service_status.status_level != 'OK' %}
         <div class="p-3 text-center text-sm font-medium {% if service_status.status_level == 'MAINTENANCE' %} bg-yellow-500 text-black {% else %} bg-red-600 text-white {% endif %}">
             {% if service_status.status_level == 'MAINTENANCE' %} 🛠️ Bakım Uyarısı: {% else %} ⚠️ Önemli Sorun: {% endif %} {{ service_status.message }}
         </div>
@@ -62,8 +76,8 @@
 
         <section id="hero" class="pt-20 pb-32 bg-gray-50 dark:bg-gray-800 slider-clip">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight mb-4">{{ site_content['hero_title'] }}</h1>
-                <p class="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">{{ site_content['hero_subtitle'] }}</p>
+                <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight mb-4">{{ site_content.get('hero_title') }}</h1>
+                <p class="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">{{ site_content.get('hero_subtitle') }}</p>
                 {% if latest_version %}
                 <a href="{{ url_for('download_file') }}" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full shadow-lg text-white accent-color hover:bg-red-600 md:py-4 md:text-lg md:px-10 transition-transform transform hover:scale-105">
                     Hemen İndir (v{{ latest_version.version_number }})
@@ -78,10 +92,12 @@
         <section id="features" class="py-20 bg-white dark:bg-gray-900 -mt-20">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ site_content['features_section_title'] }}</h2>
-                    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">{{ site_content['features_section_subtitle'] }}</p>
+                    <h2 class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ site_content.get('features_section_title') }}</h2>
+                    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">{{ site_content.get('features_section_subtitle') }}</p>
                 </div>
 
+                <!-- SLIDER BÖLÜMÜ GÜNCELLENDİ -->
+                {% if app_features %}
                 <div x-data="{ activeSlide: 0, slides: {{ app_features|length }} }" class="relative overflow-hidden rounded-xl shadow-2xl">
                     <div class="flex transition-transform duration-500 ease-in-out" :style="`transform: translateX(-${activeSlide * 100}%)`">
                         {% for feature in app_features %}
@@ -91,25 +107,36 @@
                                 <p class="text-gray-600 dark:text-gray-400">{{ feature.description }}</p>
                             </div>
                             <div class="md:w-1/2">
-                                <div class="bg-gray-300 dark:bg-gray-700 w-full h-64 rounded-lg flex items-center justify-center text-gray-500">
-                                    {{ feature.image_url }}
+                                <div class="bg-gray-200 dark:bg-gray-700 w-full aspect-video rounded-lg flex items-center justify-center text-gray-500 overflow-hidden">
+                                    {% if feature.image_filename %}
+                                        <img src="{{ url_for('static', filename='uploads/' + feature.image_filename) }}" alt="{{ feature.title }}" class="w-full h-full object-cover">
+                                    {% else %}
+                                        <span>[Resim]</span>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
                         {% endfor %}
                     </div>
-                    <button @click="activeSlide = (activeSlide - 1 + slides) % slides" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/70 dark:bg-gray-900/70 p-3 rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-700 transition-all">
+                     
+                    <button x-show="slides > 1" @click="activeSlide = (activeSlide - 1 + slides) % slides" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/70 dark:bg-gray-900/70 p-3 rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-700 transition-all">
                         <svg class="h-6 w-6 text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                     </button>
-                    <button @click="activeSlide = (activeSlide + 1) % slides" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/70 dark:bg-gray-900/70 p-3 rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-700 transition-all">
+                    <button x-show="slides > 1" @click="activeSlide = (activeSlide + 1) % slides" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/70 dark:bg-gray-900/70 p-3 rounded-full shadow-lg hover:bg-white dark:hover:bg-gray-700 transition-all">
                         <svg class="h-6 w-6 text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                     </button>
-                    <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
-                        <template x-for="index in slides" :key="index">
-                            <button @click="activeSlide = index - 1" :class="{'accent-color': activeSlide === index - 1, 'bg-gray-300 dark:bg-gray-700': activeSlide !== index - 1}" class="w-3 h-3 rounded-full transition-colors duration-300"></button>
+                    <div x-show="slides > 1" class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+                        <template x-for="i in slides" :key="i">
+                            <button @click="activeSlide = i - 1" :class="{'accent-color': activeSlide === i - 1, 'bg-gray-300 dark:bg-gray-700': activeSlide !== i - 1}" class="w-3 h-3 rounded-full transition-colors duration-300"></button>
                         </template>
                     </div>
                 </div>
+                {% else %}
+                <div class="text-center p-12 bg-gray-100 dark:bg-gray-800 rounded-xl shadow-2xl">
+                    <p class="text-gray-500 dark:text-gray-400">Görüntülenecek özellik bulunmuyor.</p>
+                </div>
+                {% endif %}
+
 
                 {% if latest_version %}
                 <div class="mt-16 bg-gray-100 dark:bg-gray-800 p-8 rounded-lg shadow-inner">
@@ -125,11 +152,11 @@
                 {% endif %}
             </div>
         </section>
-
-        <section id="download" class="py-20 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+        
+         <section id="download" class="py-20 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <h2 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-4">{{ site_content['download_section_title'] }}</h2>
-                <p class="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto">{{ site_content['download_section_subtitle'] }}</p>
+                <h2 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-4">{{ site_content.get('download_section_title') }}</h2>
+                <p class="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto">{{ site_content.get('download_section_subtitle') }}</p>
                 {% if latest_version %}
                 <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                     <a href="{{ url_for('download_file') }}" class="inline-flex items-center justify-center px-12 py-4 border border-transparent text-xl font-bold rounded-lg shadow-xl text-white accent-color hover:bg-red-600 transition-transform transform hover:scale-105">
@@ -145,11 +172,11 @@
 
         <section id="contact" class="py-20 bg-gray-50 dark:bg-gray-800">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <h2 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-4">{{ site_content['developer_section_title'] }}</h2>
-                <p class="text-xl accent-text font-semibold mb-6">{{ site_content['developer_name'] }}</p>
-                <p class="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">{{ site_content['developer_bio'] }}</p>
-                <a href="{{ site_content['support_link'] }}" target="_blank" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full shadow-md text-white bg-blue-500 hover:bg-blue-600 transition-transform transform hover:scale-105">
-                    {{ site_content['developer_button_text'] }}
+                <h2 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-4">{{ site_content.get('developer_section_title') }}</h2>
+                <p class="text-xl accent-text font-semibold mb-6">{{ site_content.get('developer_name') }}</p>
+                <p class="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">{{ site_content.get('developer_bio') }}</p>
+                <a href="{{ site_content.get('support_link') }}" target="_blank" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-full shadow-md text-white bg-blue-500 hover:bg-blue-600 transition-transform transform hover:scale-105">
+                    {{ site_content.get('developer_button_text') }}
                 </a>
             </div>
         </section>
@@ -157,8 +184,8 @@
         <section id="feedback" class="py-20 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
-                    <h2 class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ site_content['feedback_section_title'] }}</h2>
-                    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">{{ site_content['feedback_section_subtitle'] }}</p>
+                    <h2 class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ site_content.get('feedback_section_title') }}</h2>
+                    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">{{ site_content.get('feedback_section_subtitle') }}</p>
                 </div>
                 <div class="max-w-lg mx-auto bg-gray-50 dark:bg-gray-800 p-8 rounded-xl shadow-2xl">
                     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -192,10 +219,10 @@
 
     <footer class="bg-gray-800 dark:bg-gray-900 border-t border-red-500">
         <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center text-gray-400 dark:text-gray-500">
-            <p>{{ site_content['footer_info'] }}</p>
+            <p>{{ site_content.get('footer_info') }}</p>
         </div>
     </footer>
-
+    
     <button id="scrollToTopBtn" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });" class="fixed bottom-6 right-6 p-3 accent-color text-white rounded-full shadow-lg hover:bg-red-700 transition-all duration-300 opacity-0 transform translate-y-4 pointer-events-none z-50" aria-label="Sayfa Başına Git">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
     </button>
@@ -213,3 +240,4 @@
     </script>
 </body>
 </html>
+
