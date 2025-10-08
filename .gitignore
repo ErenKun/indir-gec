@@ -1,5 +1,17 @@
-venv/
+#venv/
+#__pycache__/
+#*.pyc
+#.env
+#database.db  # Veritabanı dosyasını GitHub'a yüklemeyin!
+# Veritabanı ve sunucuya özel dosyalar
+instance/
+*.sqlite3
+*.db
+
+# Python cache dosyaları
 __pycache__/
 *.pyc
-.env
-database.db  # Veritabanı dosyasını GitHub'a yüklemeyin!
+
+# Sanal ortam klasörü
+.virtualenvs/
+venv/
