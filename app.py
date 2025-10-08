@@ -31,6 +31,10 @@ login_manager.login_view = 'admin_login'
 login_manager.login_message = "Bu sayfayı görüntülemek için lütfen giriş yapın."
 login_manager.login_message_category = "info"
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 # --- B. Yardımcı Fonksiyonlar ve Filtreler ---
 ISTANBUL_TZ = pytz.timezone('Europe/Istanbul')
 
