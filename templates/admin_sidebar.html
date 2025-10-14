@@ -1,0 +1,38 @@
+<div>
+    <h1 class="text-3xl font-bold accent-text mb-8 border-b border-gray-200 dark:border-gray-700 pb-4">Admin Paneli</h1>
+    <nav class="space-y-2">
+        {% set active_class = 'bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-300 font-semibold' %}
+        {% set link_class = 'flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200' %}
+
+        <a href="{{ url_for('admin_dashboard') }}" class="{{ link_class }} {% if request.endpoint == 'admin_dashboard' %}{{ active_class }}{% endif %}">
+            <svg class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+            Genel Bakış
+        </a>
+        <a href="{{ url_for('admin_versions') }}" class="{{ link_class }} {% if request.endpoint in ['admin_versions', 'admin_add_version', 'admin_edit_version'] %}{{ active_class }}{% endif %}">
+            <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h4M8 7a2 2 0 012-2h4a2 2 0 012 2v2m-6 4h4m-4 4v-4m0 0h4m-4 0a2 2 0 01-2-2V7m2 2h4m-4 0a2 2 0 00-2 2v4a2 2 0 002 2m0 0h4"></path></svg>
+            Sürüm Yönetimi
+        </a>
+        <a href="{{ url_for('admin_content') }}" class="{{ link_class }} {% if request.endpoint == 'admin_content' %}{{ active_class }}{% endif %}">
+            <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            İçerik Yönetimi
+        </a>
+        <a href="{{ url_for('admin_features') }}" class="{{ link_class }} {% if request.endpoint == 'admin_features' %}{{ active_class }}{% endif %}">
+           <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4M14 3v4m-2-2h4M17 17v4m-2-2h4M5 11h14"></path></svg>
+            Özellik Yönetimi
+        </a>
+        <a href="{{ url_for('admin_feedback') }}" class="{{ link_class }} {% if request.endpoint == 'admin_feedback' %}{{ active_class }}{% endif %}">
+            <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            Geri Bildirimler
+        </a>
+    </nav>
+</div>
+<div class="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+     <a href="{{ url_for('admin_profile') }}" class="{{ link_class }} {% if request.endpoint == 'admin_profile' %}{{ active_class }}{% endif %}">
+        <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+        Profilim
+    </a>
+    <a href="{{ url_for('admin_logout') }}" class="{{ link_class }} text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        Çıkış Yap
+    </a>
+</div>

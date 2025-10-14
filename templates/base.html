@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="tr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site_content.get('site_title', 'İndirGeç') }}{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        html { scroll-behavior: smooth; }
+        .accent-color { background-color: #ef4444; }
+        .accent-text { color: #ef4444; }
+        .slider-clip { clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%); }
+        html.dark { color-scheme: dark; }
+        html:not(.dark) { color-scheme: light; }
+        .theme-icon-dark, html.dark .theme-icon-light { display: none; }
+        html.dark .theme-icon-dark { display: block; }
+    </style>
+    <script>
+        function applyTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.theme = isDark ? 'dark' : 'light';
+        }
+        applyTheme();
+    </script>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+
+    <header id="top" class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-md">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <a href="{{ url_for('index', _anchor='top') }}" class="text-2xl font-bold accent-text transition-colors duration-300 hover:text-red-600">İndirGeç</a>
+            <div class="hidden md:flex space-x-8">
+                <a href="{{ url_for('index', _anchor='features') }}" class="header-link text-gray-700 dark:text-gray-300 hover:accent-text transition-colors duration-200">Özellikler</a>
+                <a href="{{ url_for('index', _anchor='download') }}" class="header-link text-gray-700 dark:text-gray-300 hover:accent-text transition-colors duration-200">İndir</a>
+                <a href="{{ url_for('index', _anchor='contact') }}" class="header-link text-gray-700 dark:text-gray-300 hover:accent-text transition-colors duration-200">Geliştirici</a>
+                <a href="{{ url_for('index', _anchor='feedback') }}" class="header-link text-gray-700 dark:text-gray-300 hover:accent-text transition-colors duration-200">Geri Bildirim</a>
+                <a href="{{ url_for('version_archive') }}" class="header-link text-gray-700 dark:text-gray-300 hover:accent-text transition-colors duration-200">Arşiv</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" aria-label="Temayı Değiştir">
+                    <svg class="h-6 w-6 text-gray-700 dark:text-gray-300 theme-icon-light" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    <svg class="h-6 w-6 text-gray-700 dark:text-gray-300 theme-icon-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-gray-800 dark:bg-gray-900 border-t border-red-500">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center text-gray-400 dark:text-gray-500">
+            {% if service_status and service_status.status_level == 'OK' %}
+            <div class="flex items-center justify-center space-x-2 text-sm text-green-400 mb-4">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>{{ service_status.message }}</span>
+            </div>
+            {% endif %}
+            <p>{{ site_content.get('footer_info') }}</p>
+        </div>
+    </footer>
+    
+    <button id="scrollToTopBtn" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });" class="fixed bottom-6 right-6 p-3 accent-color text-white rounded-full shadow-lg hover:bg-red-700 transition-all duration-300 opacity-0 transform translate-y-4 pointer-events-none z-50" aria-label="Sayfa Başına Git">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+    </button>
+    <script>
+        const scrollToTopBtn = document.getElementById("scrollToTopBtn");
+        window.onscroll = () => {
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                scrollToTopBtn.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+            } else {
+                scrollToTopBtn.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Sürüm Arşivi - {{ site_content['site_title'] }}{% endblock %}
+{% block title %}Sürüm Arşivi - {{ site_content.get('site_title') }}{% endblock %}
 
 {% block content %}
 <header class="bg-gray-100 dark:bg-gray-900 py-16">
@@ -25,11 +25,11 @@
             </p>
         </div>
         {% endfor %}
-    </div>
 
-    {% if not archive_versions %}
-        <p class="text-center text-gray-500 dark:text-gray-400">Şu anda arşivde aktif sürüm haricinde bir sürüm bulunmamaktadır.</p>
-    {% endif %}
+        {% if not archive_versions %}
+            <p class="text-center text-gray-500 dark:text-gray-400">Arşivde görüntülenecek bir sürüm bulunmuyor.</p>
+        {% endif %}
+    </div>
 
     <div class="mt-12 text-center">
         <a href="{{ url_for('index') }}" class="text-red-600 hover:text-red-500 font-medium">← Ana Sayfaya Geri Dön</a>
