@@ -69,8 +69,8 @@ class Version(db.Model):
     patch_notes = db.Column(db.Text, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     download_count = db.Column(db.Integer, default=0)
-    filename = db.Column(db.String(255), nullable=True) # Yüklenen dosyanın adı
-    original_filename = db.Column(db.String(255), nullable=True) # Orjinal dosya adı
+    filename = db.Column(db.String(255), nullable=True)
+    original_filename = db.Column(db.String(255), nullable=True)
 
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -94,9 +94,17 @@ class AppFeature(db.Model):
 
 class ServiceStatus(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    status_level = db.Column(db.String(20), default='OK')
+    status_level = db.Column(db.String(20), default='OK') # OK, MINOR_ISSUE, MAINTENANCE
     message = db.Column(db.String(500), default='Tüm servisler normal çalışıyor.')
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class SystemMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    message_type = db.Column(db.String(20), default='info') # info, warning, danger
+    is_active = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # --- D. Veritabanı Kurulum Komutu ---
 
@@ -121,14 +129,19 @@ def init_db_command():
         'developer_name': 'Eren KÜN', 'developer_bio': 'Bu proje, yazılım geliştiricisi Eren KÜN tarafından yönetilmekte ve aktif olarak güncellenmektedir.',
         'developer_button_text': 'Destek ve Bağlantılar', 'feedback_section_title': 'Geri Bildirim',
         'feedback_section_subtitle': 'Uygulama hakkındaki görüş, öneri ve hataları bize bildirin.',
-        'footer_info': '© 2024 İndirGeç. Geliştirici: Eren KÜN.', 'support_link': 'https://linktr.ee/erennkun',
-        'download_button_text': 'Hemen İndir', 'archive_link_text': 'Tüm Sürüm Arşivi →'
+        'footer_info': '© 2025 İndirGeç. Geliştirici: Eren KÜN.', 'support_link': 'https://linktr.ee/erennkun',
+        'download_button_text': 'Hemen İndir', 'archive_link_text': 'Tüm Sürüm Arşivi →',
+        'logo_filename': '' # Logo için varsayılan boş
     }
     for key, value in default_contents.items():
         if not SiteContent.query.filter_by(key_name=key).first():
             db.session.add(SiteContent(key_name=key, content=value))
 
     if not ServiceStatus.query.first(): db.session.add(ServiceStatus())
+    if not SystemMessage.query.first(): 
+         # Varsayılan boş bir mesaj oluştur
+         db.session.add(SystemMessage(title='Hoşgeldiniz', content='İndirGeç sistemine hoşgeldiniz.', is_active=False))
+
     db.session.commit()
     print("Varsayılan site içeriği ve servis durumu eklendi.")
 
@@ -136,11 +149,14 @@ def init_db_command():
 
 @app.context_processor
 def inject_global_data():
+    logo_content = SiteContent.query.filter_by(key_name='logo_filename').first()
     return dict(
         site_content={c.key_name: c.content for c in SiteContent.query.all()},
         service_status=ServiceStatus.query.first(),
+        system_message=SystemMessage.query.filter_by(is_active=True).first(),
         app_features=AppFeature.query.order_by(AppFeature.order).all(),
-        total_downloads=db.session.query(db.func.sum(Version.download_count)).scalar() or 0
+        total_downloads=db.session.query(db.func.sum(Version.download_count)).scalar() or 0,
+        site_logo=logo_content.content if logo_content else None
     )
 
 @app.route('/')
@@ -175,6 +191,35 @@ def submit_feedback():
 def rss_feed():
     all_versions = Version.query.order_by(Version.release_date.desc()).limit(10).all()
     return Response(render_template('rss_feed.xml', all_versions=all_versions), mimetype='application/rss+xml')
+
+# --- API ROTASI (Masaüstü Uygulaması İçin) ---
+@app.route('/api/app-data')
+def api_app_data():
+    """Masaüstü uygulaması için sürüm, durum ve mesaj bilgilerini JSON döner."""
+    latest_version = Version.query.filter_by(is_active=True).order_by(Version.release_date.desc()).first()
+    sys_msg = SystemMessage.query.filter_by(is_active=True).first()
+    status = ServiceStatus.query.first()
+    
+    response = {
+        "version": {
+            "number": latest_version.version_number if latest_version else None,
+            "download_url": url_for('download_file', version_id=latest_version.id, _external=True) if latest_version else None,
+            "patch_notes": latest_version.patch_notes if latest_version else None,
+            "release_date": latest_version.release_date.isoformat() if latest_version else None
+        },
+        "system_status": {
+            "level": status.status_level if status else "OK",
+            "message": status.message if status else "OK"
+        },
+        "developer_message": {
+            "active": True if sys_msg else False,
+            "title": sys_msg.title if sys_msg else None,
+            "content": sys_msg.content if sys_msg else None,
+            "type": sys_msg.message_type if sys_msg else None,
+            "created_at": sys_msg.created_at.isoformat() if sys_msg else None
+        }
+    }
+    return jsonify(response)
 
 # --- F. Admin Rotaları ---
 
@@ -240,7 +285,6 @@ def admin_add_version():
         return redirect(url_for('admin_versions'))
     return render_template('admin_versions.html', action='add')
 
-
 @app.route('/admin/versions/edit/<int:version_id>', methods=['GET', 'POST'])
 @login_required
 def admin_edit_version(version_id):
@@ -278,32 +322,79 @@ def admin_delete_version(version_id):
     flash('Sürüm kalıcı olarak silindi.', 'success')
     return redirect(url_for('admin_versions'))
 
-
 @app.route('/admin/content', methods=['GET', 'POST'])
 @login_required
 def admin_content():
     if request.method == 'POST':
+        # Metin içerikleri güncelle
         for key, value in request.form.items():
             if key.startswith('content_'):
                 item = SiteContent.query.filter_by(key_name=key.split('_', 1)[1]).first()
                 if item: item.content = value
         
-        status = ServiceStatus.query.first() or ServiceStatus()
-        db.session.add(status)
-        status.status_level = request.form.get('status_level')
-        message = request.form.get('status_message')
-        if status.status_level == 'OK' and not message:
-            message = 'Tüm servisler normal çalışıyor.'
-        status.message = message
-        status.updated_at = datetime.utcnow()
-        
+        # Logo Yükleme İşlemi
+        if 'logo_file' in request.files:
+            file = request.files['logo_file']
+            if file and file.filename != '' and allowed_file_image(file.filename):
+                # Eski logoyu silme işlemi eklenebilir
+                filename = secure_filename(f"logo_{secrets.token_hex(4)}_{file.filename}")
+                file.save(os.path.join(app.config['UPLOAD_FOLDER_IMAGES'], filename))
+                
+                logo_item = SiteContent.query.filter_by(key_name='logo_filename').first()
+                if not logo_item:
+                    logo_item = SiteContent(key_name='logo_filename', content='')
+                    db.session.add(logo_item)
+                logo_item.content = filename
+
         db.session.commit()
-        flash('Site içeriği ve hizmet durumu güncellendi.', 'success')
+        flash('Site içeriği güncellendi.', 'success')
         return redirect(url_for('admin_content'))
 
     return render_template('admin_content.html', 
-                           content_items=SiteContent.query.order_by(SiteContent.id).all(), 
-                           service_status=ServiceStatus.query.first())
+                           content_items=SiteContent.query.filter(SiteContent.key_name != 'logo_filename').order_by(SiteContent.id).all())
+
+@app.route('/admin/status', methods=['GET', 'POST'])
+@login_required
+def admin_status():
+    status = ServiceStatus.query.first() or ServiceStatus()
+    if request.method == 'POST':
+        if not status.id: db.session.add(status)
+        
+        status.status_level = request.form.get('status_level')
+        message = request.form.get('status_message')
+        
+        # Otomatik mesaj mantığı
+        if status.status_level == 'OK' and not message.strip():
+            message = 'Tüm servisler normal çalışıyor.'
+            
+        status.message = message
+        status.updated_at = datetime.utcnow()
+        db.session.commit()
+        flash('Hizmet durumu güncellendi.', 'success')
+        return redirect(url_for('admin_status'))
+        
+    return render_template('admin_status.html', service_status=status)
+
+@app.route('/admin/message', methods=['GET', 'POST'])
+@login_required
+def admin_message():
+    message = SystemMessage.query.first()
+    if not message:
+        message = SystemMessage(title='', content='')
+        db.session.add(message)
+        db.session.commit()
+
+    if request.method == 'POST':
+        message.title = request.form.get('title')
+        message.content = request.form.get('content')
+        message.message_type = request.form.get('message_type')
+        message.is_active = request.form.get('is_active') == 'on'
+        message.created_at = datetime.utcnow()
+        db.session.commit()
+        flash('Geliştirici mesajı güncellendi.', 'success')
+        return redirect(url_for('admin_message'))
+
+    return render_template('admin_message.html', system_message=message)
 
 @app.route('/admin/features', methods=['GET', 'POST'])
 @login_required
@@ -330,7 +421,7 @@ def admin_features():
                 flash('Yeni özellik eklendi.', 'success')
 
             elif action == 'edit':
-                feature = App.Feature.query.get_or_404(request.form.get('feature_id'))
+                feature = AppFeature.query.get_or_404(request.form.get('feature_id'))
                 feature.title = request.form.get('title')
                 feature.description = request.form.get('description')
                 feature.order = int(request.form.get('order', 0))

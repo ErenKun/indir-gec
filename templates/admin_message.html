@@ -1,0 +1,41 @@
+{% extends "admin_dashboard.html" %} 
+{% block title %}Geliştirici Mesajı{% endblock %}
+
+{% block admin_content %}
+<h2 class="text-2xl font-bold mb-6 border-b dark:border-gray-700 pb-2">Geliştirici Mesajı Yönetimi</h2>
+<p class="text-gray-600 dark:text-gray-400 mb-6">Buradan yayınlayacağınız mesajlar hem web sitesinde hem de masaüstü uygulamasında bildirim olarak görünecektir.</p>
+
+<form method="POST" action="{{ url_for('admin_message') }}" class="space-y-8">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <div class="flex items-center mb-6">
+            <input type="checkbox" name="is_active" id="is_active" {% if system_message and system_message.is_active %}checked{% endif %} class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <label for="is_active" class="ml-2 block text-sm font-bold text-gray-900 dark:text-white">Mesajı Yayınla (Aktif)</label>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6">
+            <div>
+                <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mesaj Başlığı</label>
+                <input type="text" id="title" name="title" value="{{ system_message.title if system_message else '' }}" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 p-2">
+            </div>
+            
+            <div>
+                <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mesaj İçeriği</label>
+                <textarea id="content" name="content" rows="4" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 p-2">{{ system_message.content if system_message else '' }}</textarea>
+            </div>
+
+            <div>
+                <label for="message_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mesaj Tipi</label>
+                <select id="message_type" name="message_type" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 p-2">
+                    <option value="info" {% if system_message and system_message.message_type == 'info' %}selected{% endif %}>Bilgilendirme (Mavi)</option>
+                    <option value="warning" {% if system_message and system_message.message_type == 'warning' %}selected{% endif %}>Uyarı (Sarı)</option>
+                    <option value="danger" {% if system_message and system_message.message_type == 'danger' %}selected{% endif %}>Kritik (Kırmızı)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <button type="submit" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        Mesajı Kaydet
+    </button>
+</form>
+{% endblock %}

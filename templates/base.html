@@ -7,15 +7,20 @@
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <style>
         html { scroll-behavior: smooth; }
         .accent-color { background-color: #ef4444; }
         .accent-text { color: #ef4444; }
         .slider-clip { clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%); }
-        html.dark { color-scheme: dark; }
-        html:not(.dark) { color-scheme: light; }
         .theme-icon-dark, html.dark .theme-icon-light { display: none; }
         html.dark .theme-icon-dark { display: block; }
+        /* Yama notları için boşlukları koru */
+        .whitespace-pre-wrap { white-space: pre-wrap; }
     </style>
     <script>
         function applyTheme() {
@@ -32,11 +37,16 @@
         applyTheme();
     </script>
 </head>
-<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 flex flex-col min-h-screen">
 
     <header id="top" class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-md">
         <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <a href="{{ url_for('index', _anchor='top') }}" class="text-2xl font-bold accent-text transition-colors duration-300 hover:text-red-600">İndirGeç</a>
+            <a href="{{ url_for('index', _anchor='top') }}" class="flex items-center space-x-2 text-2xl font-bold accent-text transition-colors duration-300 hover:text-red-600">
+                {% if site_logo %}
+                    <img src="{{ url_for('static', filename='uploads/' + site_logo) }}" alt="Logo" class="h-10 w-auto">
+                {% endif %}
+                <span>İndirGeç</span>
+            </a>
             <div class="hidden md:flex space-x-8">
                 <a href="{{ url_for('index', _anchor='features') }}" class="header-link text-gray-700 dark:text-gray-300 hover:accent-text transition-colors duration-200">Özellikler</a>
                 <a href="{{ url_for('index', _anchor='download') }}" class="header-link text-gray-700 dark:text-gray-300 hover:accent-text transition-colors duration-200">İndir</a>
@@ -53,11 +63,11 @@
         </nav>
     </header>
 
-    <main>
+    <main class="flex-grow">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-gray-800 dark:bg-gray-900 border-t border-red-500">
+    <footer class="bg-gray-800 dark:bg-gray-900 border-t border-red-500 mt-auto">
         <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center text-gray-400 dark:text-gray-500">
             {% if service_status and service_status.status_level == 'OK' %}
             <div class="flex items-center justify-center space-x-2 text-sm text-green-400 mb-4">
@@ -65,6 +75,9 @@
                 <span>{{ service_status.message }}</span>
             </div>
             {% endif %}
+            <div class="mb-4">
+                <a href="https://erenteknoloji.statuspage.io/" target="_blank" class="text-sm text-blue-400 hover:text-blue-300 underline">Eren Teknoloji Sistem Durumu</a>
+            </div>
             <p>{{ site_content.get('footer_info') }}</p>
         </div>
     </footer>

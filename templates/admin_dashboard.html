@@ -6,6 +6,11 @@
     <title>Admin Paneli | {% block title %}Genel Bakış{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <style>
         .accent-text { color: #ef4444; }
         html.dark { color-scheme: dark; }
@@ -76,9 +81,10 @@
                     </div>
                     <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
                         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2">Hızlı Erişim</h2>
-                        <div class="flex space-x-4">
+                        <div class="flex flex-wrap gap-4">
                             <a href="{{ url_for('admin_versions') }}" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">Sürümleri Yönet</a>
                             <a href="{{ url_for('admin_content') }}" class="py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">İçeriği Düzenle</a>
+                            <a href="{{ url_for('admin_status') }}" class="py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">Sistem Durumu</a>
                         </div>
                     </div>
                 {% endblock %}
