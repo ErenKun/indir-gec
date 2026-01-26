@@ -5,29 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ site_content.get('site_title', 'İndirGeç') }}{% endblock %}</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: {
-                extend: {
-                    // Prose sınıfı için renk ayarları (isteğe bağlı özelleştirme)
-                    typography: (theme) => ({
-                        DEFAULT: {
-                            css: {
-                                color: theme('colors.gray.700'),
-                                a: {
-                                    color: theme('colors.red.600'),
-                                    '&:hover': {
-                                        color: theme('colors.red.700'),
-                                    },
-                                },
-                            },
-                        },
-                    }),
-                },
-            },
         }
     </script>
     <style>

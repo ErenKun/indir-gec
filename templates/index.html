@@ -2,15 +2,35 @@
 
 {% block content %}
     <style>
-        .patch-content { font-family: inherit; } /* Sitenin kendi fontunu koru */
-        .patch-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
-        .patch-content ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
-        .patch-content li { margin-bottom: 0.25rem; }
-        .patch-content p { margin-bottom: 0.75rem; }
-        .patch-content strong, .patch-content b { font-weight: 700; color: inherit; }
-        .patch-content h1, .patch-content h2, .patch-content h3 { font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; font-size: 1.1em; }
-        .patch-content a { color: #ef4444; text-decoration: underline; }
-        .patch-content a:hover { color: #dc2626; }
+        #patch-notes-area {
+            font-family: inherit !important; /* Sitenin fontunu kullan */
+            color: inherit !important;
+        }
+        #patch-notes-area ul { 
+            list-style-type: disc !important; 
+            padding-left: 1.5rem !important; 
+            margin-bottom: 1rem !important; 
+        }
+        #patch-notes-area ol { 
+            list-style-type: decimal !important; 
+            padding-left: 1.5rem !important; 
+            margin-bottom: 1rem !important; 
+        }
+        #patch-notes-area li { 
+            margin-bottom: 0.25rem !important; 
+        }
+        #patch-notes-area p { 
+            margin-bottom: 0.75rem !important; 
+        }
+        #patch-notes-area strong, #patch-notes-area b { 
+            font-weight: 700 !important; 
+        }
+        #patch-notes-area h1, #patch-notes-area h2, #patch-notes-area h3 { 
+            font-weight: 700 !important; 
+            margin-top: 1rem !important; 
+            margin-bottom: 0.5rem !important; 
+            font-size: 1.1em !important; 
+        }
     </style>
 
     {% if service_status and service_status.status_level != 'OK' %}
@@ -109,7 +129,7 @@
                 <div class="mt-12 w-full max-w-4xl text-left bg-gray-100 dark:bg-gray-800 p-8 rounded-lg shadow-inner">
                     <h3 class="text-2xl font-bold accent-text mb-4">v{{ latest_version.version_number }} Yama Notları</h3>
                     
-                    <div class="patch-content text-gray-700 dark:text-gray-300 text-sm">
+                    <div id="patch-notes-area" class="text-gray-700 dark:text-gray-300 text-sm">
                         {{ latest_version.patch_notes | safe }}
                     </div>
 
