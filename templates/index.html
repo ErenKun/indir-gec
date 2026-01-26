@@ -1,31 +1,33 @@
 {% extends "base.html" %}
 
-{% block content %}
+{% block head %}
     <style>
-        .custom-html-content {
-            /* Yazı tipini sitenin kalanıyla aynı (Modern Sans-Serif) yapmaya zorla */
+        .patch-container {
+            /* Yazı tipini sitenin kalanıyla aynı yapmaya zorla (Sans-Serif) */
             font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-            text-align: left; /* Metni sola hizala */
-            line-height: 1.6; /* Satır aralığını okunaklı yap */
+            text-align: left;
+            line-height: 1.6;
         }
         /* Liste stillerini (madde işaretlerini) geri getir */
-        .custom-html-content ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin: 0.5rem 0 !important; }
-        .custom-html-content ol { list-style-type: decimal !important; padding-left: 1.5rem !important; margin: 0.5rem 0 !important; }
-        .custom-html-content li { margin-bottom: 0.25rem !important; }
+        .patch-container ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin: 0.5rem 0 !important; }
+        .patch-container ol { list-style-type: decimal !important; padding-left: 1.5rem !important; margin: 0.5rem 0 !important; }
+        .patch-container li { margin-bottom: 0.25rem !important; }
         
         /* Başlık ve kalın yazıları düzelt */
-        .custom-html-content h1, .custom-html-content h2, .custom-html-content h3 { 
+        .patch-container h1, .patch-container h2, .patch-container h3 { 
             font-weight: 700 !important; 
             margin-top: 1rem !important; 
             margin-bottom: 0.5rem !important; 
             font-size: 1.1em !important;
         }
-        .custom-html-content strong, .custom-html-content b { font-weight: 700 !important; }
+        .patch-container strong, .patch-container b { font-weight: 700 !important; }
         
         /* Linkleri düzenle */
-        .custom-html-content a { color: #ef4444 !important; text-decoration: underline !important; }
+        .patch-container a { color: #ef4444 !important; text-decoration: underline !important; }
     </style>
+{% endblock %}
 
+{% block content %}
     {% if service_status and service_status.status_level != 'OK' %}
     <div class="p-3 text-center text-sm font-medium {% if service_status.status_level == 'MAINTENANCE' %} bg-yellow-500 text-black {% else %} bg-red-600 text-white {% endif %}">
         {% if service_status.status_level == 'MAINTENANCE' %} 🛠️ Bakım Uyarısı: {% else %} ⚠️ Önemli Sorun: {% endif %} {{ service_status.message }}
@@ -122,7 +124,7 @@
                 <div class="mt-12 w-full max-w-4xl text-left bg-gray-100 dark:bg-gray-800 p-8 rounded-lg shadow-inner">
                     <h3 class="text-2xl font-bold accent-text mb-4">v{{ latest_version.version_number }} Yama Notları</h3>
                     
-                    <div class="custom-html-content text-gray-700 dark:text-gray-300 text-sm">
+                    <div class="patch-container text-gray-700 dark:text-gray-300 text-sm">
                         {{ latest_version.patch_notes | safe }}
                     </div>
 

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ site_content.get('site_title', 'İndirGeç') }}{% endblock %}</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
@@ -12,6 +13,9 @@
             darkMode: 'class',
         }
     </script>
+    
+    {% block head %}{% endblock %}
+
     <style>
         html { scroll-behavior: smooth; }
         .accent-color { background-color: #ef4444; }
