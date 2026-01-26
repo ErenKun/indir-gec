@@ -6,16 +6,22 @@
     <title>{% block title %}{{ site_content.get('site_title', 'İndirGeç') }}{% endblock %}</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
     
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
     <script>
         tailwind.config = {
             darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    },
+                }
+            }
         }
     </script>
     
-    {% block head %}{% endblock %}
-
     <style>
         html { scroll-behavior: smooth; }
         .accent-color { background-color: #ef4444; }
@@ -24,6 +30,7 @@
         .theme-icon-dark, html.dark .theme-icon-light { display: none; }
         html.dark .theme-icon-dark { display: block; }
     </style>
+    
     <script>
         function applyTheme() {
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
