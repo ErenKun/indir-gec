@@ -2,35 +2,28 @@
 
 {% block content %}
     <style>
-        #patch-notes-area {
-            font-family: inherit !important; /* Sitenin fontunu kullan */
-            color: inherit !important;
+        .custom-html-content {
+            /* Yazı tipini sitenin kalanıyla aynı (Modern Sans-Serif) yapmaya zorla */
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            text-align: left; /* Metni sola hizala */
+            line-height: 1.6; /* Satır aralığını okunaklı yap */
         }
-        #patch-notes-area ul { 
-            list-style-type: disc !important; 
-            padding-left: 1.5rem !important; 
-            margin-bottom: 1rem !important; 
-        }
-        #patch-notes-area ol { 
-            list-style-type: decimal !important; 
-            padding-left: 1.5rem !important; 
-            margin-bottom: 1rem !important; 
-        }
-        #patch-notes-area li { 
-            margin-bottom: 0.25rem !important; 
-        }
-        #patch-notes-area p { 
-            margin-bottom: 0.75rem !important; 
-        }
-        #patch-notes-area strong, #patch-notes-area b { 
-            font-weight: 700 !important; 
-        }
-        #patch-notes-area h1, #patch-notes-area h2, #patch-notes-area h3 { 
+        /* Liste stillerini (madde işaretlerini) geri getir */
+        .custom-html-content ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin: 0.5rem 0 !important; }
+        .custom-html-content ol { list-style-type: decimal !important; padding-left: 1.5rem !important; margin: 0.5rem 0 !important; }
+        .custom-html-content li { margin-bottom: 0.25rem !important; }
+        
+        /* Başlık ve kalın yazıları düzelt */
+        .custom-html-content h1, .custom-html-content h2, .custom-html-content h3 { 
             font-weight: 700 !important; 
             margin-top: 1rem !important; 
             margin-bottom: 0.5rem !important; 
-            font-size: 1.1em !important; 
+            font-size: 1.1em !important;
         }
+        .custom-html-content strong, .custom-html-content b { font-weight: 700 !important; }
+        
+        /* Linkleri düzenle */
+        .custom-html-content a { color: #ef4444 !important; text-decoration: underline !important; }
     </style>
 
     {% if service_status and service_status.status_level != 'OK' %}
@@ -129,7 +122,7 @@
                 <div class="mt-12 w-full max-w-4xl text-left bg-gray-100 dark:bg-gray-800 p-8 rounded-lg shadow-inner">
                     <h3 class="text-2xl font-bold accent-text mb-4">v{{ latest_version.version_number }} Yama Notları</h3>
                     
-                    <div id="patch-notes-area" class="text-gray-700 dark:text-gray-300 text-sm">
+                    <div class="custom-html-content text-gray-700 dark:text-gray-300 text-sm">
                         {{ latest_version.patch_notes | safe }}
                     </div>
 
