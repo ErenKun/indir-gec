@@ -22,6 +22,8 @@
         }
     </script>
     
+    {% block head %}{% endblock %}
+
     <style>
         html { scroll-behavior: smooth; }
         .accent-color { background-color: #ef4444; }
@@ -50,12 +52,16 @@
 
     <header id="top" class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-md">
         <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <a href="{{ url_for('index', _anchor='top') }}" class="flex items-center space-x-2 text-2xl font-bold accent-text transition-colors duration-300 hover:text-red-600">
+            
+            <a href="{{ url_for('index') }}" 
+               onclick="if(window.location.pathname === this.getAttribute('href') || window.location.pathname === '/'){ window.scrollTo({ top: 0, behavior: 'smooth' }); return false; }"
+               class="flex items-center space-x-2 text-2xl font-bold accent-text transition-colors duration-300 hover:text-red-600 cursor-pointer">
                 {% if site_logo %}
                     <img src="{{ url_for('static', filename='uploads/' + site_logo) }}" alt="Logo" class="h-10 w-auto">
                 {% endif %}
                 <span>İndirGeç</span>
             </a>
+            
             <div class="hidden md:flex space-x-8">
                 <a href="{{ url_for('index', _anchor='features') }}" class="header-link text-gray-700 dark:text-gray-300 hover:accent-text transition-colors duration-200">Özellikler</a>
                 <a href="{{ url_for('index', _anchor='download') }}" class="header-link text-gray-700 dark:text-gray-300 hover:accent-text transition-colors duration-200">İndir</a>
