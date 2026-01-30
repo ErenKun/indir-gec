@@ -3,55 +3,107 @@
 
 {% block admin_content %}
 <div class="flex justify-between items-center mb-6 border-b dark:border-gray-700 pb-2">
-    <h2 class="text-2xl font-bold">Geri Bildirim Yönetimi</h2>
+    <h2 class="text-2xl font-bold dark:text-white">Geri Bildirim Yönetimi</h2>
 </div>
 
-<div class="bg-white dark:bg-gray-800 p-2 sm:p-4 rounded-lg shadow-md">
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Durum</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Gönderen</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Mesaj</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tarih</th>
-                    <th scope="col" class="relative px-6 py-3"><span class="sr-only">Eylemler</span></th>
-                </tr>
-            </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {% for item in all_feedback %}
-                <tr class="{% if not item.is_read %}font-bold dark:bg-gray-900/50{% else %}text-gray-500 dark:text-gray-400{% endif %}">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        {% if not item.is_read %}
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">Yeni</span>
-                        {% else %}
-                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">Okundu</span>
-                        {% endif %}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ item.email }}</td>
-                    <td class="px-6 py-4 max-w-sm">
-                        <p class="text-sm truncate">{{ item.message }}</p>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">{{ item.timestamp | ist_time }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                        {% if not item.is_read %}
-                        <form method="POST" action="{{ url_for('admin_mark_read', feedback_id=item.id) }}" class="inline">
-                            <button type="submit" class="text-blue-600 dark:text-blue-400 hover:underline">Okundu İşaretle</button>
-                        </form>
-                        {% endif %}
-                        <form method="POST" action="{{ url_for('admin_delete_feedback', feedback_id=item.id) }}" class="inline" onsubmit="return confirm('Bu geri bildirim kalıcı olarak silinecek. Emin misiniz?');">
-                            <button type="submit" class="text-red-600 dark:text-red-400 hover:underline">Sil</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-                 {% if not all_feedback %}
-                <tr>
-                    <td colspan="5" class="text-center text-gray-500 dark:text-gray-400 p-6">Sistemde hiç geri bildirim bulunmuyor.</td>
-                </tr>
-                {% endif %}
-            </tbody>
-        </table>
+<div class="space-y-4">
+    {% for item in all_feedback %}
+    <div x-data="{ expanded: false }" class="bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 transition-all duration-200" 
+         :class="{'border-yellow-400': '{{ item.is_read }}' == 'False', 'border-green-500': '{{ item.is_read }}' == 'True'}">
+        
+        <div @click="expanded = !expanded" class="p-4 cursor-pointer flex flex-col md:flex-row items-start md:items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-t-lg">
+            
+            <div class="flex items-center space-x-4 flex-1">
+                <div class="flex-shrink-0">
+                    {% if not item.is_read %}
+                        <div class="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/50 flex items-center justify-center text-yellow-600 dark:text-yellow-400" title="Okunmadı">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        </div>
+                    {% else %}
+                        <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-green-600 dark:text-green-400" title="Okundu">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {{ item.email }}
+                    </p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                        {{ item.message }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center mt-4 md:mt-0 md:ml-4 space-x-4">
+                <span class="text-xs text-gray-400 whitespace-nowrap">{{ item.timestamp | ist_time }}</span>
+                <svg class="w-5 h-5 text-gray-400 transform transition-transform duration-200" :class="{'rotate-180': expanded}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+        </div>
+
+        <div x-show="expanded" x-collapse class="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg">
+            <div class="p-6 space-y-6">
+                
+                <div>
+                    <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Mesaj İçeriği</h4>
+                    <p class="text-gray-800 dark:text-gray-200 whitespace-pre-wrap bg-white dark:bg-gray-900 p-4 rounded border border-gray-200 dark:border-gray-700">{{ item.message }}</p>
+                </div>
+
+                <div class="bg-gray-200 dark:bg-gray-700 p-4 rounded-lg border border-gray-300 dark:border-gray-600">
+                    <h4 class="flex items-center text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                        <span class="text-lg mr-2">🕵️</span> Dedektif Bilgileri (Teknik Analiz)
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="block text-xs text-gray-500 dark:text-gray-400">IP Adresi</span>
+                            <span class="font-mono text-gray-900 dark:text-white select-all">{{ item.ip_address if item.ip_address else 'Kayıt Yok' }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs text-gray-500 dark:text-gray-400">Dijital Kimlik (Cookie ID)</span>
+                            <span class="font-mono text-gray-900 dark:text-white text-xs select-all">{{ item.cookie_id if item.cookie_id else 'Tespit Edilemedi' }}</span>
+                        </div>
+                        <div class="md:col-span-2">
+                            <span class="block text-xs text-gray-500 dark:text-gray-400">Cihaz / Tarayıcı (User Agent)</span>
+                            <span class="font-mono text-gray-900 dark:text-white text-xs break-all">{{ item.user_agent if item.user_agent else 'Bilinmiyor' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button @click="navigator.clipboard.writeText('{{ item.email }}'); $el.innerText = 'Kopyalandı!'; setTimeout(() => $el.innerText = 'E-postayı Kopyala', 2000);" 
+                            class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition">
+                        E-postayı Kopyala
+                    </button>
+
+                    <a href="mailto:{{ item.email }}?subject=İndirGeç Geri Bildirim Yanıtı" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition">
+                        Yanıtla
+                    </a>
+
+                    {% if not item.is_read %}
+                    <form method="POST" action="{{ url_for('admin_mark_read', feedback_id=item.id) }}" class="inline">
+                        <button type="submit" class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition">Okundu İşaretle</button>
+                    </form>
+                    {% endif %}
+                    
+                    <form method="POST" action="{{ url_for('admin_delete_feedback', feedback_id=item.id) }}" class="inline" onsubmit="return confirm('Bu geri bildirim ve tüm teknik verileri silinecek. Emin misiniz?');">
+                        <button type="submit" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition">Sil</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
     </div>
+    {% endfor %}
+
+    {% if not all_feedback %}
+    <div class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">Henüz geri bildirim yok</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Yeni geri bildirimler geldiğinde burada detaylı analizleriyle listelenecek.</p>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

@@ -4,4 +4,5 @@ Flask-Login
 SQLAlchemy
 pytz
 Babel
-gunicorn # PythonAnywhere'da uygulamayı çalıştırmak için gereken sunucu
+gunicorn
+requests

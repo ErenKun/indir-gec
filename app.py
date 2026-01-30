@@ -1,6 +1,8 @@
 import os
 import secrets
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_from_directory
+import uuid
+import requests  # NTFY bildirimi için eklendi
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_from_directory, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -78,6 +80,11 @@ class Feedback(db.Model):
     message = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     is_read = db.Column(db.Boolean, default=False)
+    
+    # Dedektif Modu Verileri
+    ip_address = db.Column(db.String(50), nullable=True)
+    user_agent = db.Column(db.String(500), nullable=True)
+    cookie_id = db.Column(db.String(100), nullable=True)
 
 class SiteContent(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -162,7 +169,17 @@ def inject_global_data():
 @app.route('/')
 def index():
     latest_version = Version.query.filter_by(is_active=True).order_by(Version.release_date.desc()).first()
-    return render_template('index.html', latest_version=latest_version)
+    
+    # Dedektif Modu - Cookie Kontrolü (Sayfa her açıldığında)
+    response = make_response(render_template('index.html', latest_version=latest_version))
+    
+    # Kullanıcının tarayıcısında 'user_tracking_id' çerezi yoksa, yeni bir tane oluşturup yapıştırıyoruz.
+    if 'user_tracking_id' not in request.cookies:
+        new_uuid = str(uuid.uuid4())
+        # Çerez 1 yıl boyunca (365 gün) geçerli olacak şekilde ayarlanır.
+        response.set_cookie('user_tracking_id', new_uuid, max_age=60*60*24*365)
+    
+    return response
 
 @app.route('/version-archive')
 def version_archive():
@@ -178,10 +195,49 @@ def download_file(version_id):
 
 @app.route('/feedback', methods=['POST'])
 def submit_feedback():
-    email, message = request.form.get('email'), request.form.get('message')
+    email = request.form.get('email')
+    message = request.form.get('message')
+    
     if email and message:
-        db.session.add(Feedback(email=email, message=message))
+        # Dedektif Modu Verilerini Topla
+        # 1. IP Adresi (PythonAnywhere proxy'si arkasında olduğu için X-Forwarded-For önce kontrol edilir)
+        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+        
+        # 2. Cihaz Bilgisi (User Agent)
+        user_agent = request.user_agent.string
+        
+        # 3. Cookie ID (Varsa al, yoksa None)
+        cookie_id = request.cookies.get('user_tracking_id')
+
+        # Veritabanına Kaydet
+        db.session.add(Feedback(
+            email=email, 
+            message=message, 
+            ip_address=ip_address, 
+            user_agent=user_agent, 
+            cookie_id=cookie_id
+        ))
         db.session.commit()
+        
+        # --- NTFY Bildirimi Gönder (Telefonuna Bildirim) ---
+        try:
+            ntfy_topic = "indirGec_geri_bildirim_admin_TR34" # Kullanıcının belirlediği kanal
+            ntfy_url = f"https://ntfy.sh/{ntfy_topic}"
+            
+            notification_data = f"Gönderen: {email}\nMesaj: {message}\nIP: {ip_address}"
+            
+            requests.post(ntfy_url,
+                data=notification_data.encode('utf-8'),
+                headers={
+                    "Title": "📩 Yeni Geri Bildirim Var!",
+                    "Priority": "high",
+                    "Tags": "incoming_envelope,detective"
+                },
+                timeout=5 # 5 saniye içinde cevap gelmezse işlemi kes (Site yavaşlamasın)
+            )
+        except Exception as e:
+            print(f"NTFY Bildirim Hatası: {e}") # Hata olsa bile site çalışmaya devam etsin
+
         flash('Geri bildiriminiz için teşekkürler!', 'success')
     else:
         flash('Lütfen tüm alanları doldurun.', 'error')
