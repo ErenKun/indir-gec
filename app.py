@@ -560,5 +560,60 @@ def admin_profile():
             return redirect(url_for('admin_profile'))
     return render_template('admin_profile.html')
 
+# --- HATA AYIKLAMA ROTASI (Test Sonrası Silebilirsin) ---
+@app.route('/test-ntfy')
+def test_ntfy():
+    import requests
+    try:
+        # 1. Bildirim Ayarları
+        topic = "indirGec_geri_bildirim_admin_TR34"
+        url = f"https://ntfy.sh/{topic}"
+        
+        # 2. Proxy Ayarı (PythonAnywhere Ücretsiz Sürüm İçin Şart)
+        proxy_host = "proxy.server:3128"
+        proxies = {
+            "http": f"http://{proxy_host}",
+            "https": f"http://{proxy_host}",
+        }
+
+        # 3. Gönderim Denemesi
+        response = requests.post(url, 
+            data="Bu bir test mesajıdır. Eğer bunu görüyorsan sistem çalışıyor! 🚀".encode('utf-8'),
+            headers={
+                "Title": "Test Bildirimi", 
+                "Priority": "high",
+                "Tags": "tada"
+            },
+            proxies=proxies, # Proxy ile dene
+            timeout=10
+        )
+        
+        # 4. Sonuç Analizi
+        if response.status_code == 200:
+            return f"""
+            <div style="color: green; font-size: 20px; font-family: sans-serif; padding: 20px;">
+                ✅ <b>BAŞARILI!</b><br>
+                Bildirim gönderildi. Telefonunu kontrol et.<br>
+                Sunucu Cevabı: {response.text}
+            </div>
+            """
+        else:
+            return f"""
+            <div style="color: red; font-size: 20px; font-family: sans-serif; padding: 20px;">
+                ❌ <b>GİTMEDİ!</b><br>
+                Hata Kodu: {response.status_code}<br>
+                Cevap: {response.text}
+            </div>
+            """
+
+    except Exception as e:
+        # Hata varsa ekrana bas
+        return f"""
+        <div style="color: red; font-size: 20px; font-family: sans-serif; padding: 20px;">
+            🔥 <b>KRİTİK HATA!</b><br>
+            Python Hatası: {str(e)}
+        </div>
+        """
+
 if __name__ == '__main__':
     app.run(debug=True)
