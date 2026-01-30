@@ -3,91 +3,128 @@
 
 {% block admin_content %}
 <div class="flex justify-between items-center mb-6 border-b dark:border-gray-700 pb-2">
-    <h2 class="text-2xl font-bold">Sürüm Yönetimi</h2>
-    <a href="{{ url_for('admin_add_version') }}" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+    <h2 class="text-2xl font-bold dark:text-white">Sürüm Yönetimi</h2>
+    {% if action != 'add' and action != 'edit' %}
+    <a href="{{ url_for('admin_add_version') }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         Yeni Sürüm Ekle
     </a>
+    {% endif %}
 </div>
 
-{% if action in ['add', 'edit'] %}
-<div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8">
-    <h3 class="text-xl font-semibold mb-4">{{ 'Sürümü Düzenle' if action == 'edit' else 'Yeni Sürüm Ekle' }}</h3>
+{% if action == 'add' or action == 'edit' %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 max-w-2xl mx-auto">
+    <h3 class="text-xl font-semibold mb-4 dark:text-white">
+        {% if action == 'add' %}Yeni Sürüm Oluştur{% else %}Sürümü Düzenle{% endif %}
+    </h3>
+    
     <form method="POST" enctype="multipart/form-data" class="space-y-4">
+        
         <div>
-            <label for="version_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sürüm Numarası (Örn: 1.2.3)</label>
-            <input type="text" name="version_number" id="version_number" value="{{ version.version_number if version else '' }}" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sürüm Numarası (Örn: 1.0.5)</label>
+            <input type="text" name="version_number" value="{{ version.version_number if version else '' }}" required
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         </div>
+
         <div>
-            <label for="patch_notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Yama Notları (HTML kullanılabilir)</label>
-            <textarea name="patch_notes" id="patch_notes" rows="6" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2">{{ version.patch_notes if version else '' }}</textarea>
-        </div>
-        <div>
-            <label for="version_file" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Sürüm Dosyası (.exe, .zip, vb.)
-                {% if action == 'edit' %}<span class="text-xs text-gray-400">(Değiştirmek istemiyorsanız boş bırakın)</span>{% endif %}
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Program Dosyası (.exe, .zip vb.)
+                {% if action == 'edit' and version.filename %}
+                <span class="text-xs text-green-500 ml-2">(Mevcut dosya yüklü: {{ version.original_filename }})</span>
+                {% endif %}
             </label>
-            <input type="file" name="version_file" id="version_file" {% if action == 'add' %}required{% endif %} class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-red-900/50 dark:file:text-red-300 dark:hover:file:bg-red-900">
-            {% if version and version.original_filename %}
-            <p class="text-xs text-gray-500 mt-1">Mevcut dosya: {{ version.original_filename }}</p>
-            {% endif %}
+            <input type="file" name="version_file" {% if action == 'add' %}required{% endif %}
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            <p class="text-xs text-gray-500 mt-1">Sadece .exe, .zip, .rar uzantılı dosyalar kabul edilir.</p>
         </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Yama Notları (HTML Destekler)</label>
+            <textarea name="patch_notes" rows="6" required
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ version.patch_notes if version else '' }}</textarea>
+            <p class="text-xs text-gray-500 mt-1">İpucu: Madde işareti için &lt;li&gt;, kalın yazı için &lt;b&gt; kullanabilirsiniz.</p>
+        </div>
+
         <div class="flex items-center">
-            <input type="checkbox" name="is_active" id="is_active" {% if not version or version.is_active %}checked{% endif %} class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500">
-            <label for="is_active" class="ml-2 block text-sm text-gray-900 dark:text-gray-300">Bu sürüm ana sayfada aktif indirme linki olarak görünsün mü?</label>
+            <input type="checkbox" name="is_active" id="is_active" {% if not version or version.is_active %}checked{% endif %}
+                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+            <label for="is_active" class="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                Bu sürümü yayına al (Aktif Sürüm)
+            </label>
         </div>
-        <div class="flex justify-end space-x-3">
-            <a href="{{ url_for('admin_versions') }}" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">İptal</a>
-            <button type="submit" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
-                {{ 'Değişiklikleri Kaydet' if action == 'edit' else 'Sürümü Ekle' }}
+
+        <div class="flex justify-end space-x-3 pt-4">
+            <a href="{{ url_for('admin_versions') }}" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 transition">İptal</a>
+            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                {% if action == 'add' %}Oluştur{% else %}Kaydet{% endif %}
             </button>
         </div>
     </form>
 </div>
-{% endif %}
 
-
-<div class="bg-white dark:bg-gray-800 p-2 sm:p-4 rounded-lg shadow-md">
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Durum</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Sürüm</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Dosya Adı</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">İndirme</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Yayın Tarihi</th>
-                    <th class="relative px-6 py-3"><span class="sr-only">Eylemler</span></th>
-                </tr>
-            </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {% for version in all_versions %}
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        {% if version.is_active %}
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">Aktif</span>
-                        {% else %}
-                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-300">Pasif</span>
-                        {% endif %}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">v{{ version.version_number }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ version.original_filename | truncate(30) }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ version.download_count }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ version.release_date | ist_time }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                        <a href="{{ url_for('admin_edit_version', version_id=version.id) }}" class="text-blue-600 dark:text-blue-400 hover:underline">Düzenle</a>
-                        <form method="POST" action="{{ url_for('admin_delete_version', version_id=version.id) }}" class="inline" onsubmit="return confirm('Bu sürüm ve ilişkili dosya kalıcı olarak silinecek. Emin misiniz?');">
-                            <button type="submit" class="text-red-600 dark:text-red-400 hover:underline">Sil</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-                 {% if not all_versions %}
-                <tr>
-                    <td colspan="6" class="text-center text-gray-500 dark:text-gray-400 p-6">Sistemde hiç sürüm bulunmuyor.</td>
-                </tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
+{% else %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Sürüm</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Dosya</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Yayın Tarihi</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">İndirme</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Durum</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">İşlemler</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {% for version in all_versions %}
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="text-sm font-bold text-gray-900 dark:text-white">v{{ version.version_number }}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {% if version.filename %}
+                        <span class="text-green-500 flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            {{ version.original_filename|truncate(20) }}
+                        </span>
+                    {% else %}
+                        <span class="text-red-500 flex items-center" title="Kurtarılan veri, dosya yok">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            Dosya Yok
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {{ version.release_date | ist_time }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {{ version.download_count }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    {% if version.is_active %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Yayında</span>
+                    {% else %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Pasif</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <a href="{{ url_for('admin_edit_version', version_id=version.id) }}" class="text-blue-600 hover:text-blue-900 mr-3">Düzenle</a>
+                    <form action="{{ url_for('admin_delete_version', version_id=version.id) }}" method="POST" class="inline" onsubmit="return confirm('Bu sürümü silmek istediğinize emin misiniz?');">
+                        <button type="submit" class="text-red-600 hover:text-red-900">Sil</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            
+            {% if not all_versions %}
+            <tr>
+                <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                    Henüz hiç sürüm eklenmemiş.
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
 </div>
+{% endif %}
 {% endblock %}

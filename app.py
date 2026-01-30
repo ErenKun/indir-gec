@@ -1,7 +1,7 @@
 import os
 import secrets
 import uuid
-import requests  # NTFY bildirimi için eklendi
+import requests  # NTFY bildirimi için
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_from_directory, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -219,13 +219,20 @@ def submit_feedback():
         ))
         db.session.commit()
         
-        # --- NTFY Bildirimi Gönder (Telefonuna Bildirim) ---
+        # --- NTFY Bildirimi Gönder (Proxy Ayarlı) ---
         try:
             ntfy_topic = "indirGec_geri_bildirim_admin_TR34" # Kullanıcının belirlediği kanal
             ntfy_url = f"https://ntfy.sh/{ntfy_topic}"
             
             notification_data = f"Gönderen: {email}\nMesaj: {message}\nIP: {ip_address}"
             
+            # PythonAnywhere Ücretsiz Sürüm için Proxy Ayarı
+            proxy_host = "proxy.server:3128"
+            proxies = {
+                "http": f"http://{proxy_host}",
+                "https": f"http://{proxy_host}",
+            }
+
             requests.post(ntfy_url,
                 data=notification_data.encode('utf-8'),
                 headers={
@@ -233,10 +240,12 @@ def submit_feedback():
                     "Priority": "high",
                     "Tags": "incoming_envelope,detective"
                 },
-                timeout=5 # 5 saniye içinde cevap gelmezse işlemi kes (Site yavaşlamasın)
+                proxies=proxies, # ÖNEMLİ: Proxy burada devreye giriyor
+                timeout=10 
             )
         except Exception as e:
-            print(f"NTFY Bildirim Hatası: {e}") # Hata olsa bile site çalışmaya devam etsin
+            # Hata oluşursa konsola yaz (Site çalışmaya devam eder)
+            print(f"NTFY Bildirim Hatası: {e}") 
 
         flash('Geri bildiriminiz için teşekkürler!', 'success')
     else:
