@@ -207,23 +207,28 @@ def submit_feedback():
         cookie_id = request.cookies.get('user_tracking_id')
 
         # 2. Veritabanına Kayıt
-        db.session.add(Feedback(
-            email=email, 
-            message=message, 
-            ip_address=ip_address, 
-            user_agent=user_agent, 
-            cookie_id=cookie_id
-        ))
-        db.session.commit()
+        try:
+            db.session.add(Feedback(
+                email=email, 
+                message=message, 
+                ip_address=ip_address, 
+                user_agent=user_agent, 
+                cookie_id=cookie_id
+            ))
+            db.session.commit()
+        except Exception as e:
+            flash(f'Veritabanı Hatası: {str(e)}', 'error')
+            return redirect(url_for('index', _anchor='feedback'))
         
-        # 3. NTFY Bildirimi (Güçlendirilmiş)
+        # 3. NTFY Bildirimi (DÜZELTİLDİ: Başlıktaki emoji kaldırıldı)
         try:
             ntfy_topic = "indirGec_geri_bildirim_admin_TR34"
             ntfy_url = f"https://ntfy.sh/{ntfy_topic}"
             
-            notification_data = f"Gönderen: {email}\nMesaj: {message}\nIP: {ip_address}"
+            # Mesajın içine emojiyi koyabiliriz (Body UTF-8 destekler)
+            notification_data = f"Gönderen: {email}\nMesaj: {message}\nIP: {ip_address}".encode('utf-8')
             
-            # PythonAnywhere Proxy Ayarı
+            # Proxy Ayarı
             proxy_host = "proxy.server:3128"
             proxies = {
                 "http": f"http://{proxy_host}",
@@ -231,22 +236,24 @@ def submit_feedback():
             }
 
             requests.post(ntfy_url,
-                data=notification_data.encode('utf-8'),
+                data=notification_data,
                 headers={
-                    "Title": "📩 Yeni Geri Bildirim Var!",
+                    "Title": "Yeni Geri Bildirim", # Emoji kaldırıldı, artık hata vermez
                     "Priority": "high",
-                    "Tags": "incoming_envelope,detective"
+                    "Tags": "incoming_envelope,detective" # İkonu burası sağlayacak
                 },
                 proxies=proxies,
-                timeout=30 # Timeout süresi 30 saniyeye çıkarıldı
+                timeout=10 
             )
+
         except Exception as e:
-            # Hata detayını konsola bas (Web Error Log'da görünür)
-            print(f"!!! NTFY Bildirim Hatası !!!: {e}")
+            # Hata oluşsa bile kullanıcıya hissettirme, arka planda logla
+            print(f"Bildirim Hatası: {e}")
 
         flash('Geri bildiriminiz için teşekkürler!', 'success')
     else:
         flash('Lütfen tüm alanları doldurun.', 'error')
+        
     return redirect(url_for('index', _anchor='feedback'))
     
 @app.route('/rss')
