@@ -27,6 +27,13 @@
         </div>
 
         <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Harici İndirme Linki (İsteğe Bağlı)</label>
+            <input type="url" name="external_url" value="{{ version.external_url if version else '' }}" placeholder="https://..."
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+            <p class="text-xs text-gray-500 mt-1">Doldurulursa dosya yüklemek zorunlu değildir ve indirme bu linke yönlendirilir.</p>
+        </div>
+
+        <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Program Dosyası (.exe, .zip vb.)
                 {% if action == 'edit' and version.filename %}

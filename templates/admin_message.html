@@ -1,41 +1,178 @@
 {% extends "admin_dashboard.html" %} 
-{% block title %}Geliştirici Mesajı{% endblock %}
+{% block title %}Geliştirici Mesajı Yönetimi{% endblock %}
 
 {% block admin_content %}
-<h2 class="text-2xl font-bold mb-6 border-b dark:border-gray-700 pb-2">Geliştirici Mesajı Yönetimi</h2>
-<p class="text-gray-600 dark:text-gray-400 mb-6">Buradan yayınlayacağınız mesajlar hem web sitesinde hem de masaüstü uygulamasında bildirim olarak görünecektir.</p>
+<div class="flex justify-between items-center mb-6 border-b dark:border-gray-700 pb-2">
+    <h2 class="text-2xl font-bold dark:text-white">Geliştirici Mesajı Yönetimi</h2>
+</div>
+<p class="text-gray-600 dark:text-gray-400 mb-6">Uygulama ve web sitesinde gösterilecek mesajları buradan yönetebilirsiniz.</p>
 
-<form method="POST" action="{{ url_for('admin_message') }}" class="space-y-8">
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-        <div class="flex items-center mb-6">
-            <input type="checkbox" name="is_active" id="is_active" {% if system_message and system_message.is_active %}checked{% endif %} class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-            <label for="is_active" class="ml-2 block text-sm font-bold text-gray-900 dark:text-white">Mesajı Yayınla (Aktif)</label>
-        </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <!-- Add Form -->
+    <div class="lg:col-span-1">
+        <form method="POST" action="{{ url_for('admin_add_message') }}" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md space-y-4 sticky top-8">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Yeni Mesaj Ekle</h3>
+            
+            <div class="flex items-center">
+                <input type="checkbox" name="is_active" id="add_is_active" class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500">
+                <label for="add_is_active" class="ml-2 block text-sm font-medium text-gray-900 dark:text-white">Hemen Yayınla</label>
+            </div>
 
-        <div class="grid grid-cols-1 gap-6">
             <div>
-                <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mesaj Başlığı</label>
-                <input type="text" id="title" name="title" value="{{ system_message.title if system_message else '' }}" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 p-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Başlık</label>
+                <input type="text" name="title" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
             </div>
             
             <div>
-                <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mesaj İçeriği</label>
-                <textarea id="content" name="content" rows="4" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 p-2">{{ system_message.content if system_message else '' }}</textarea>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">İçerik</label>
+                <textarea name="content" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white"></textarea>
             </div>
 
             <div>
-                <label for="message_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mesaj Tipi</label>
-                <select id="message_type" name="message_type" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 p-2">
-                    <option value="info" {% if system_message and system_message.message_type == 'info' %}selected{% endif %}>Bilgilendirme (Mavi)</option>
-                    <option value="warning" {% if system_message and system_message.message_type == 'warning' %}selected{% endif %}>Uyarı (Sarı)</option>
-                    <option value="danger" {% if system_message and system_message.message_type == 'danger' %}selected{% endif %}>Kritik (Kırmızı)</option>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mesaj Tipi</label>
+                <select name="message_type" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+                    <option value="info">Bilgilendirme (Mavi)</option>
+                    <option value="warning">Uyarı (Sarı)</option>
+                    <option value="danger">Kritik (Kırmızı)</option>
                 </select>
             </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Hedef</label>
+                <select name="target" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+                    <option value="both">Hem Site Hem Uygulama</option>
+                    <option value="site">Sadece Web Sitesi</option>
+                    <option value="app">Sadece Uygulama</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Gösterme Sıklığı (Uygulama)</label>
+                <select name="frequency" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+                    <option value="once">Sadece Bir Kez</option>
+                    <option value="every_launch">Her Açılışta</option>
+                    <option value="daily">Günde Bir Kez</option>
+                    <option value="hourly">Saatte Bir Kez</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sıralama</label>
+                <input type="number" name="display_order" value="0" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+            </div>
+            
+            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition">
+                Mesaj Ekle
+            </button>
+        </form>
+    </div>
+
+    <!-- Messages List -->
+    <div class="lg:col-span-2 space-y-4" x-data>
+        {% for m in messages %}
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md border-l-4 {% if m.message_type == 'danger' %}border-red-500{% elif m.message_type == 'warning' %}border-yellow-500{% else %}border-blue-500{% endif %}">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h4 class="text-lg font-bold text-gray-900 dark:text-white">{{ m.title }}</h4>
+                    <p class="text-sm text-gray-500">Hedef: {{ m.target }} | Sıklık: {{ m.frequency }} | Sıra: {{ m.display_order }}</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full {% if m.is_active %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ 'Aktif' if m.is_active else 'Pasif' }}
+                    </span>
+                    
+                    <form action="{{ url_for('admin_toggle_message', id=m.id) }}" method="POST" class="inline">
+                        <button type="submit" class="text-sm text-yellow-600 hover:text-yellow-800 ml-2">Durum</button>
+                    </form>
+                    
+                    <button type="button" @click="$dispatch('open-edit-modal', { id: {{ m.id }}, title: '{{ m.title | replace('\n', '\\n') | replace('\'', '\\\'') }}', content: '{{ m.content | replace('\n', '\\n') | replace('\'', '\\\'') }}', type: '{{ m.message_type }}', target: '{{ m.target }}', frequency: '{{ m.frequency }}', order: {{ m.display_order }}, is_active: {{ 'true' if m.is_active else 'false' }} })" class="text-sm text-blue-600 hover:text-blue-800 ml-2">Düzenle</button>
+                    
+                    <form action="{{ url_for('admin_delete_message', id=m.id) }}" method="POST" class="inline" onsubmit="return confirm('Emin misiniz?');">
+                        <button type="submit" class="text-sm text-red-600 hover:text-red-800 ml-2">Sil</button>
+                    </form>
+                </div>
+            </div>
+            <p class="text-gray-700 dark:text-gray-300 mt-2">{{ m.content }}</p>
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md text-center text-gray-500">
+            Henüz mesaj bulunmuyor.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div x-data="{ show: false, id: '', title: '', content: '', type: 'info', target: 'both', frequency: 'once', order: 0, is_active: false }" 
+     @open-edit-modal.window="show = true; id = $event.detail.id; title = $event.detail.title; content = $event.detail.content; type = $event.detail.type; target = $event.detail.target; frequency = $event.detail.frequency; order = $event.detail.order; is_active = $event.detail.is_active"
+     x-show="show" 
+     style="display: none;" 
+     class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div x-show="show" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="show = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div x-show="show" class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form :action="'/admin/message/edit/' + id" method="POST">
+                <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">Mesaj Düzenle</h3>
+                    <div class="mt-4 space-y-4">
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" name="is_active" id="edit_is_active" x-model="is_active" class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500">
+                            <label for="edit_is_active" class="ml-2 block text-sm font-medium text-gray-900 dark:text-white">Aktif</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Başlık</label>
+                            <input type="text" name="title" x-model="title" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">İçerik</label>
+                            <textarea name="content" rows="3" x-model="content" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mesaj Tipi</label>
+                            <select name="message_type" x-model="type" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+                                <option value="info">Bilgilendirme (Mavi)</option>
+                                <option value="warning">Uyarı (Sarı)</option>
+                                <option value="danger">Kritik (Kırmızı)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Hedef</label>
+                            <select name="target" x-model="target" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+                                <option value="both">Hem Site Hem Uygulama</option>
+                                <option value="site">Sadece Web Sitesi</option>
+                                <option value="app">Sadece Uygulama</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Gösterme Sıklığı</label>
+                            <select name="frequency" x-model="frequency" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+                                <option value="once">Sadece Bir Kez</option>
+                                <option value="every_launch">Her Açılışta</option>
+                                <option value="daily">Günde Bir Kez</option>
+                                <option value="hourly">Saatte Bir Kez</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sıralama</label>
+                            <input type="number" name="display_order" x-model="order" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Kaydet</button>
+                    <button type="button" @click="show = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-500 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">İptal</button>
+                </div>
+            </form>
         </div>
     </div>
-    
-    <button type="submit" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-        Mesajı Kaydet
-    </button>
-</form>
+</div>
 {% endblock %}

@@ -1,0 +1,163 @@
+{% extends "admin_dashboard.html" %}
+{% block title %}Lisans Yönetimi{% endblock %}
+
+{% block admin_content %}
+<div class="flex justify-between items-center mb-6 border-b dark:border-gray-700 pb-2">
+    <h2 class="text-2xl font-bold dark:text-white">Lisans Yönetimi</h2>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border-l-4 border-blue-500">
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Toplam Lisans</h3>
+        <p class="text-2xl font-bold dark:text-white">{{ total }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border-l-4 border-green-500">
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Aktif Lisans</h3>
+        <p class="text-2xl font-bold dark:text-white">{{ active }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border-l-4 border-yellow-500">
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Donanım Kilitli</h3>
+        <p class="text-2xl font-bold dark:text-white">{{ locked }}</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border-l-4 border-purple-500">
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Bugün Aktifleşen</h3>
+        <p class="text-2xl font-bold dark:text-white">{{ today }}</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Generate Form -->
+    <div class="lg:col-span-1 space-y-6">
+        <!-- Tekli Lisans -->
+        <form method="POST" action="{{ url_for('admin_add_license') }}" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md space-y-4">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Tekli Lisans Oluştur</h3>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sahip Adı</label>
+                <input type="text" name="owner_name" placeholder="Müşteri Adı" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Notlar</label>
+                <textarea name="notes" rows="2" placeholder="Ekstra bilgi" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white"></textarea>
+            </div>
+            
+            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition">
+                Lisans Oluştur
+            </button>
+        </form>
+
+        <!-- Toplu Lisans -->
+        <form method="POST" action="{{ url_for('admin_generate_bulk_licenses') }}" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md space-y-4">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Toplu Lisans Üret</h3>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Adet (Maks 100)</label>
+                <input type="number" name="count" min="1" max="100" value="10" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+            </div>
+            
+            <button type="submit" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition">
+                Toplu Üret
+            </button>
+        </form>
+    </div>
+
+    <!-- Lisans Listesi -->
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Lisans Anahtarı / Sahip</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Durum</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kullanım</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700" x-data>
+                        {% for l in licenses %}
+                        <tr>
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-mono font-bold dark:text-white">{{ l.license_key }}</div>
+                                <div class="text-xs text-gray-500">{{ l.owner_name or 'İsimsiz' }}</div>
+                                {% if l.notes %}
+                                <div class="text-xs text-gray-400 truncate w-32" title="{{ l.notes }}">{{ l.notes }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if l.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ 'Aktif' if l.is_active else 'Pasif' }}
+                                </span>
+                                {% if l.hardware_id %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 ml-1" title="{{ l.hardware_id }}">
+                                    Kilitli
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                <div>İndirme: {{ l.download_count }}</div>
+                                <div>Açılış: {{ l.activation_count }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                
+                                <!-- Edit Modal Trigger -->
+                                <button type="button" @click="$dispatch('open-edit-modal', { id: {{ l.id }}, owner: '{{ l.owner_name or '' }}', notes: '{{ l.notes or '' }}' })" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">Düzenle</button>
+                                
+                                <form action="{{ url_for('admin_toggle_license', id=l.id) }}" method="POST" class="inline">
+                                    <button type="submit" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300">Durum</button>
+                                </form>
+
+                                {% if l.hardware_id %}
+                                <form action="{{ url_for('admin_reset_hardware', id=l.id) }}" method="POST" class="inline">
+                                    <button type="submit" class="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300">Sıfırla</button>
+                                </form>
+                                {% endif %}
+                                
+                                <form action="{{ url_for('admin_delete_license', id=l.id) }}" method="POST" class="inline" onsubmit="return confirm('Silmek istediğinize emin misiniz?');">
+                                    <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Sil</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div x-data="{ show: false, id: '', owner: '', notes: '' }" 
+     @open-edit-modal.window="show = true; id = $event.detail.id; owner = $event.detail.owner; notes = $event.detail.notes"
+     x-show="show" 
+     style="display: none;" 
+     class="fixed inset-0 z-50 overflow-y-auto" 
+     aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="show = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form :action="'/admin/licenses/edit/' + id" method="POST">
+                <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">Lisans Düzenle</h3>
+                    <div class="mt-4 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sahip Adı</label>
+                            <input type="text" name="owner_name" x-model="owner" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Notlar</label>
+                            <textarea name="notes" rows="3" x-model="notes" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 p-2 text-black dark:text-white"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Kaydet</button>
+                    <button type="button" @click="show = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-500 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

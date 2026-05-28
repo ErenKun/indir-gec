@@ -72,6 +72,7 @@ class Version(db.Model):
     download_count = db.Column(db.Integer, default=0)
     filename = db.Column(db.String(255), nullable=True)
     original_filename = db.Column(db.String(255), nullable=True)
+    external_url = db.Column(db.String(500), nullable=True)
 
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -110,7 +111,26 @@ class SystemMessage(db.Model):
     content = db.Column(db.Text, nullable=False)
     message_type = db.Column(db.String(20), default='info')
     is_active = db.Column(db.Boolean, default=False)
+    target = db.Column(db.String(20), default='both')  # 'site', 'app', 'both'
+    frequency = db.Column(db.String(30), default='once')  # 'every_launch', 'daily', 'once', 'hourly'
+    display_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class License(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    license_key = db.Column(db.String(30), unique=True, nullable=False)
+    owner_name = db.Column(db.String(100), nullable=True)
+    hardware_id = db.Column(db.String(128), nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    download_token = db.Column(db.String(64), nullable=True)
+    download_count = db.Column(db.Integer, default=0)
+    activation_count = db.Column(db.Integer, default=0)
+    last_download_ip = db.Column(db.String(50), nullable=True)
+    last_activation_ip = db.Column(db.String(50), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    activated_at = db.Column(db.DateTime, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+
 
 # --- D. Veritabanı Kurulum Komutu ---
 
@@ -120,7 +140,33 @@ def init_db_command():
     os.makedirs(app.config['UPLOAD_FOLDER_IMAGES'], exist_ok=True)
     os.makedirs(app.config['UPLOAD_FOLDER_VERSIONS'], exist_ok=True)
     db.create_all()
-    
+
+    # Yeni sütunları güvenli şekilde ekle
+    with app.app_context():
+        try:
+            db.session.execute(db.text("ALTER TABLE version ADD COLUMN external_url VARCHAR(500)"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            
+        try:
+            db.session.execute(db.text("ALTER TABLE system_message ADD COLUMN target VARCHAR(20) DEFAULT 'both'"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        try:
+            db.session.execute(db.text("ALTER TABLE system_message ADD COLUMN frequency VARCHAR(30) DEFAULT 'once'"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        try:
+            db.session.execute(db.text("ALTER TABLE system_message ADD COLUMN display_order INTEGER DEFAULT 0"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     if not User.query.filter_by(username='admin').first():
         db.session.add(User(username='admin', password_hash=generate_password_hash('admin123')))
     
@@ -161,10 +207,16 @@ def init_db_command():
 @app.context_processor
 def inject_global_data():
     logo_content = SiteContent.query.filter_by(key_name='logo_filename').first()
+    
+    site_msg = SystemMessage.query.filter(
+        SystemMessage.is_active == True,
+        SystemMessage.target.in_(['site', 'both'])
+    ).order_by(SystemMessage.display_order.asc(), SystemMessage.created_at.desc()).first()
+    
     return dict(
         site_content={c.key_name: c.content for c in SiteContent.query.all()},
         service_status=ServiceStatus.query.first(),
-        system_message=SystemMessage.query.filter_by(is_active=True).first(),
+        system_message=site_msg,
         app_features=AppFeature.query.order_by(AppFeature.order).all(),
         total_downloads=db.session.query(db.func.sum(Version.download_count)).scalar() or 0,
         site_logo=logo_content.content if logo_content else None
@@ -193,6 +245,60 @@ def download_file(version_id):
     version = Version.query.get_or_404(version_id)
     version.download_count = (version.download_count or 0) + 1
     db.session.commit()
+    if version.external_url:
+        return redirect(version.external_url)
+    return send_from_directory(app.config['UPLOAD_FOLDER_VERSIONS'], version.filename, as_attachment=True, download_name=version.original_filename)
+
+@app.route('/indir/on-kontrol', methods=['GET', 'POST'])
+def license_check():
+    version_id = request.args.get('vid') or request.form.get('vid')
+    if request.method == 'POST':
+        license_key = request.form.get('license_key')
+        if not license_key:
+            flash('Lütfen bir lisans anahtarı girin.', 'error')
+            return redirect(url_for('license_check', vid=version_id))
+            
+        license_obj = License.query.filter_by(license_key=license_key, is_active=True).first()
+        if not license_obj:
+            flash('Geçersiz veya pasif bir lisans anahtarı.', 'error')
+            return redirect(url_for('license_check', vid=version_id))
+            
+        token = secrets.token_urlsafe(32)
+        license_obj.download_token = token
+        db.session.commit()
+        
+        return redirect(url_for('download_with_token', token=token, vid=version_id))
+        
+    return render_template('license_check.html', vid=version_id)
+
+@app.route('/indir/token/<token>')
+def download_with_token(token):
+    license_obj = License.query.filter_by(download_token=token, is_active=True).first()
+    if not license_obj:
+        flash('Geçersiz veya süresi dolmuş indirme bağlantısı.', 'error')
+        return redirect(url_for('index'))
+        
+    version_id = request.args.get('vid')
+    if version_id:
+        version = Version.query.get(version_id)
+    else:
+        version = Version.query.filter_by(is_active=True).order_by(Version.release_date.desc()).first()
+        
+    if not version:
+        flash('İndirilecek sürüm bulunamadı.', 'error')
+        return redirect(url_for('index'))
+        
+    # Update stats
+    license_obj.download_count = (license_obj.download_count or 0) + 1
+    license_obj.last_download_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    license_obj.download_token = None
+    
+    version.download_count = (version.download_count or 0) + 1
+    db.session.commit()
+    
+    if version.external_url:
+        return redirect(version.external_url)
+        
     return send_from_directory(app.config['UPLOAD_FOLDER_VERSIONS'], version.filename, as_attachment=True, download_name=version.original_filename)
 
 @app.route('/feedback', methods=['POST'])
@@ -220,35 +326,47 @@ def submit_feedback():
             flash(f'Veritabanı Hatası: {str(e)}', 'error')
             return redirect(url_for('index', _anchor='feedback'))
         
-        # 3. NTFY Bildirimi (DÜZELTİLDİ: Başlıktaki emoji kaldırıldı)
+        # 3. NTFY Bildirimi
         try:
             ntfy_topic = "indirGec_geri_bildirim_admin_TR34"
-            ntfy_url = f"https://ntfy.sh/{ntfy_topic}"
-            
-            # Mesajın içine emojiyi koyabiliriz (Body UTF-8 destekler)
             notification_data = f"Gönderen: {email}\nMesaj: {message}\nIP: {ip_address}".encode('utf-8')
             
-            # Proxy Ayarı
+            # Proxy Ayarı (PythonAnywhere için gerekli)
             proxy_host = "proxy.server:3128"
             proxies = {
                 "http": f"http://{proxy_host}",
                 "https": f"http://{proxy_host}",
             }
+            
+            headers = {
+                "Title": "Yeni Geri Bildirim",
+                "Priority": "high",
+                "Tags": "incoming_envelope,detective"
+            }
 
-            requests.post(ntfy_url,
-                data=notification_data,
-                headers={
-                    "Title": "Yeni Geri Bildirim", # Emoji kaldırıldı, artık hata vermez
-                    "Priority": "high",
-                    "Tags": "incoming_envelope,detective" # İkonu burası sağlayacak
-                },
-                proxies=proxies,
-                timeout=10 
-            )
+            try:
+                # Önce HTTPS dene
+                requests.post(f"https://ntfy.sh/{ntfy_topic}",
+                    data=notification_data,
+                    headers=headers,
+                    proxies=proxies,
+                    timeout=15
+                )
+            except requests.exceptions.RequestException as e:
+                print(f"NTFY HTTPS Hatası: {e}. HTTP deneniyor...")
+                # HTTPS başarısız olursa HTTP dene
+                requests.post(f"http://ntfy.sh/{ntfy_topic}",
+                    data=notification_data,
+                    headers=headers,
+                    proxies=proxies,
+                    timeout=15
+                )
 
         except Exception as e:
-            # Hata oluşsa bile kullanıcıya hissettirme, arka planda logla
-            print(f"Bildirim Hatası: {e}")
+            # Hata oluşsa bile kullanıcıya hissettirme, arka planda detaylı logla
+            print(f"NTFY Bildirim Genel Hatası: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
         flash('Geri bildiriminiz için teşekkürler!', 'success')
     else:
@@ -260,6 +378,93 @@ def submit_feedback():
 def rss_feed():
     all_versions = Version.query.order_by(Version.release_date.desc()).limit(10).all()
     return Response(render_template('rss_feed.xml', all_versions=all_versions), mimetype='application/rss+xml')
+
+@app.route('/api/v1/license/activate', methods=['POST'])
+def api_license_activate():
+    data = request.json
+    if not data:
+        return jsonify({'status': 'error', 'message': 'JSON payload bekleniyor.'}), 400
+        
+    license_key = data.get('license_key')
+    hardware_id = data.get('hardware_id')
+    
+    if not license_key or not hardware_id:
+        return jsonify({'status': 'error', 'message': 'Eksik parametreler.'}), 400
+        
+    license_obj = License.query.filter_by(license_key=license_key).first()
+    
+    if not license_obj:
+        return jsonify({'status': 'error', 'message': 'Geçersiz lisans anahtarı.'}), 404
+        
+    if not license_obj.is_active:
+        return jsonify({'status': 'error', 'message': 'Bu lisans devre dışı bırakılmış.'}), 403
+        
+    if not license_obj.hardware_id:
+        license_obj.hardware_id = hardware_id
+        license_obj.activated_at = datetime.utcnow()
+        license_obj.activation_count = 1
+        license_obj.last_activation_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Lisans başarıyla bu cihaza kilitlendi ve etkinleştirildi.', 'valid': True}), 200
+        
+    if license_obj.hardware_id == hardware_id:
+        license_obj.activation_count += 1
+        license_obj.last_activation_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Lisans doğrulandı.', 'valid': True}), 200
+        
+    return jsonify({'status': 'error', 'message': 'Bu lisans başka bir cihazda kullanılıyor.', 'valid': False}), 403
+
+@app.route('/api/v1/license/verify', methods=['POST'])
+def api_license_verify():
+    data = request.json
+    if not data:
+        return jsonify({'status': 'error', 'valid': False, 'message': 'JSON payload bekleniyor.'}), 400
+        
+    license_key = data.get('license_key')
+    hardware_id = data.get('hardware_id')
+    
+    if not license_key or not hardware_id:
+        return jsonify({'status': 'error', 'valid': False, 'message': 'Eksik parametreler.'}), 400
+        
+    license_obj = License.query.filter_by(license_key=license_key).first()
+    
+    if not license_obj or not license_obj.is_active or license_obj.hardware_id != hardware_id:
+        return jsonify({'status': 'error', 'valid': False, 'message': 'Geçersiz veya yetkisiz lisans.'}), 403
+        
+    return jsonify({'status': 'success', 'valid': True, 'message': 'Lisans geçerli.'}), 200
+
+@app.route('/api/v1/messages', methods=['GET'])
+def api_messages():
+    messages = SystemMessage.query.filter(
+        SystemMessage.is_active == True,
+        SystemMessage.target.in_(['app', 'both'])
+    ).order_by(SystemMessage.display_order.asc(), SystemMessage.created_at.desc()).all()
+    
+    msg_list = []
+    for msg in messages:
+        msg_list.append({
+            'id': msg.id,
+            'title': msg.title,
+            'content': msg.content,
+            'type': msg.message_type,
+            'frequency': msg.frequency
+        })
+        
+    return jsonify({'status': 'success', 'messages': msg_list})
+
+@app.route('/api/v1/setup/manifest', methods=['GET'])
+def api_setup_manifest():
+    ffmpeg_url = SiteContent.query.filter_by(key_name='ffmpeg_url').first()
+    ffmpeg_hash = SiteContent.query.filter_by(key_name='ffmpeg_hash').first()
+    
+    return jsonify({
+        'status': 'success',
+        'ffmpeg': {
+            'url': ffmpeg_url.content if ffmpeg_url else 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip',
+            'hash': ffmpeg_hash.content if ffmpeg_hash else ''
+        }
+    })
 
 @app.route('/api/app-data')
 def api_app_data():
@@ -326,24 +531,30 @@ def admin_versions():
 @login_required
 def admin_add_version():
     if request.method == 'POST':
-        if 'version_file' not in request.files or not request.form.get('version_number') or not request.form.get('patch_notes'):
+        external_url = request.form.get('external_url')
+        if not request.form.get('version_number') or not request.form.get('patch_notes'):
             flash('Zorunlu alanları doldurun.', 'error')
             return redirect(request.url)
-        
-        file = request.files['version_file']
-        if file.filename == '':
-            flash('Lütfen dosya seçin.', 'error')
+            
+        file = request.files.get('version_file')
+        if not external_url and (not file or file.filename == ''):
+            flash('Lütfen dosya seçin veya harici link girin.', 'error')
             return redirect(request.url)
             
-        filename = secure_filename(f"{secrets.token_hex(8)}_{file.filename}")
-        file.save(os.path.join(app.config['UPLOAD_FOLDER_VERSIONS'], filename))
+        filename = None
+        original_filename = None
+        if file and file.filename != '':
+            filename = secure_filename(f"{secrets.token_hex(8)}_{file.filename}")
+            file.save(os.path.join(app.config['UPLOAD_FOLDER_VERSIONS'], filename))
+            original_filename = file.filename
         
         new_version = Version(
             version_number=request.form.get('version_number'),
             patch_notes=request.form.get('patch_notes'),
             is_active=request.form.get('is_active') == 'on',
             filename=filename,
-            original_filename=file.filename
+            original_filename=original_filename,
+            external_url=external_url
         )
         db.session.add(new_version)
         db.session.commit()
@@ -359,6 +570,7 @@ def admin_edit_version(version_id):
         version.version_number = request.form.get('version_number')
         version.patch_notes = request.form.get('patch_notes')
         version.is_active = request.form.get('is_active') == 'on'
+        version.external_url = request.form.get('external_url')
         
         if 'version_file' in request.files:
             file = request.files['version_file']
@@ -387,6 +599,91 @@ def admin_delete_version(version_id):
     db.session.commit()
     flash('Sürüm silindi.', 'success')
     return redirect(url_for('admin_versions'))
+
+@app.route('/admin/licenses', methods=['GET'])
+@login_required
+def admin_licenses():
+    licenses = License.query.order_by(License.created_at.desc()).all()
+    total = len(licenses)
+    active = sum(1 for l in licenses if l.is_active)
+    locked = sum(1 for l in licenses if l.hardware_id)
+    today = sum(1 for l in licenses if l.activated_at and l.activated_at.date() == datetime.utcnow().date())
+    return render_template('admin_licenses.html', licenses=licenses, total=total, active=active, locked=locked, today=today)
+
+def generate_license_key():
+    import string
+    import random
+    while True:
+        parts = ['INDIRGEC']
+        for _ in range(2):
+            parts.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=4)))
+        key = '-'.join(parts)
+        if not License.query.filter_by(license_key=key).first():
+            return key
+
+@app.route('/admin/licenses/add', methods=['POST'])
+@login_required
+def admin_add_license():
+    owner_name = request.form.get('owner_name')
+    notes = request.form.get('notes')
+    key = generate_license_key()
+    new_license = License(license_key=key, owner_name=owner_name, notes=notes)
+    db.session.add(new_license)
+    db.session.commit()
+    flash(f'Yeni lisans oluşturuldu: {key}', 'success')
+    return redirect(url_for('admin_licenses'))
+
+@app.route('/admin/licenses/bulk', methods=['POST'])
+@login_required
+def admin_generate_bulk_licenses():
+    count = int(request.form.get('count', 1))
+    if count > 100: count = 100
+    generated = []
+    for _ in range(count):
+        key = generate_license_key()
+        generated.append(License(license_key=key))
+    db.session.add_all(generated)
+    db.session.commit()
+    flash(f'{count} adet lisans oluşturuldu.', 'success')
+    return redirect(url_for('admin_licenses'))
+
+@app.route('/admin/licenses/edit/<int:id>', methods=['POST'])
+@login_required
+def admin_edit_license(id):
+    license_obj = License.query.get_or_404(id)
+    license_obj.owner_name = request.form.get('owner_name')
+    license_obj.notes = request.form.get('notes')
+    db.session.commit()
+    flash('Lisans güncellendi.', 'success')
+    return redirect(url_for('admin_licenses'))
+
+@app.route('/admin/licenses/reset/<int:id>', methods=['POST'])
+@login_required
+def admin_reset_hardware(id):
+    license_obj = License.query.get_or_404(id)
+    license_obj.hardware_id = None
+    db.session.commit()
+    flash('Donanım kilidi sıfırlandı.', 'success')
+    return redirect(url_for('admin_licenses'))
+
+@app.route('/admin/licenses/toggle/<int:id>', methods=['POST'])
+@login_required
+def admin_toggle_license(id):
+    license_obj = License.query.get_or_404(id)
+    license_obj.is_active = not license_obj.is_active
+    db.session.commit()
+    status = "aktif edildi" if license_obj.is_active else "devre dışı bırakıldı"
+    flash(f'Lisans {status}.', 'success')
+    return redirect(url_for('admin_licenses'))
+
+@app.route('/admin/licenses/delete/<int:id>', methods=['POST'])
+@login_required
+def admin_delete_license(id):
+    license_obj = License.query.get_or_404(id)
+    db.session.delete(license_obj)
+    db.session.commit()
+    flash('Lisans silindi.', 'success')
+    return redirect(url_for('admin_licenses'))
 
 @app.route('/admin/content', methods=['GET', 'POST'])
 @login_required
@@ -433,24 +730,62 @@ def admin_status():
         return redirect(url_for('admin_status'))
     return render_template('admin_status.html', service_status=status)
 
-@app.route('/admin/message', methods=['GET', 'POST'])
+@app.route('/admin/message', methods=['GET'])
 @login_required
 def admin_message():
-    message = SystemMessage.query.first()
-    if not message:
-        message = SystemMessage(title='', content='')
-        db.session.add(message)
-        db.session.commit()
-    if request.method == 'POST':
-        message.title = request.form.get('title')
-        message.content = request.form.get('content')
-        message.message_type = request.form.get('message_type')
-        message.is_active = request.form.get('is_active') == 'on'
-        message.created_at = datetime.utcnow()
-        db.session.commit()
-        flash('Mesaj güncellendi.', 'success')
-        return redirect(url_for('admin_message'))
-    return render_template('admin_message.html', system_message=message)
+    messages = SystemMessage.query.order_by(SystemMessage.display_order.asc(), SystemMessage.created_at.desc()).all()
+    return render_template('admin_message.html', messages=messages)
+
+@app.route('/admin/message/add', methods=['POST'])
+@login_required
+def admin_add_message():
+    new_message = SystemMessage(
+        title=request.form.get('title'),
+        content=request.form.get('content'),
+        message_type=request.form.get('message_type'),
+        target=request.form.get('target', 'both'),
+        frequency=request.form.get('frequency', 'once'),
+        display_order=int(request.form.get('display_order', 0)),
+        is_active=request.form.get('is_active') == 'on'
+    )
+    db.session.add(new_message)
+    db.session.commit()
+    flash('Yeni mesaj eklendi.', 'success')
+    return redirect(url_for('admin_message'))
+
+@app.route('/admin/message/edit/<int:id>', methods=['POST'])
+@login_required
+def admin_edit_message(id):
+    msg = SystemMessage.query.get_or_404(id)
+    msg.title = request.form.get('title')
+    msg.content = request.form.get('content')
+    msg.message_type = request.form.get('message_type')
+    msg.target = request.form.get('target', 'both')
+    msg.frequency = request.form.get('frequency', 'once')
+    msg.display_order = int(request.form.get('display_order', 0))
+    msg.is_active = request.form.get('is_active') == 'on'
+    db.session.commit()
+    flash('Mesaj güncellendi.', 'success')
+    return redirect(url_for('admin_message'))
+
+@app.route('/admin/message/delete/<int:id>', methods=['POST'])
+@login_required
+def admin_delete_message(id):
+    msg = SystemMessage.query.get_or_404(id)
+    db.session.delete(msg)
+    db.session.commit()
+    flash('Mesaj silindi.', 'success')
+    return redirect(url_for('admin_message'))
+
+@app.route('/admin/message/toggle/<int:id>', methods=['POST'])
+@login_required
+def admin_toggle_message(id):
+    msg = SystemMessage.query.get_or_404(id)
+    msg.is_active = not msg.is_active
+    db.session.commit()
+    status = "aktif edildi" if msg.is_active else "devre dışı bırakıldı"
+    flash(f'Mesaj {status}.', 'success')
+    return redirect(url_for('admin_message'))
 
 @app.route('/admin/features', methods=['GET', 'POST'])
 @login_required

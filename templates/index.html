@@ -86,7 +86,7 @@
             {% if latest_version and latest_version.filename %}
             <div x-data="{ downloading: false }" class="flex flex-col items-center">
                 <button
-                    @click="downloading = true; setTimeout(() => { window.location.href='{{ url_for('download_file', version_id=latest_version.id) }}' }, 500); setTimeout(() => downloading = false, 5000);"
+                    @click="downloading = true; setTimeout(() => { window.location.href='{{ url_for('license_check', vid=latest_version.id) }}' }, 500); setTimeout(() => downloading = false, 5000);"
                     :disabled="downloading"
                     class="inline-flex items-center justify-center px-12 py-4 border border-transparent text-xl font-bold rounded-lg shadow-xl text-white accent-color hover:bg-red-600 transition-all transform hover:scale-105 disabled:bg-gray-500 disabled:scale-100 disabled:cursor-not-allowed">
                     <span x-show="!downloading">{{ site_content.get('download_button_text') }} (v{{ latest_version.version_number }})</span>
