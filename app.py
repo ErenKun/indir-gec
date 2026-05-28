@@ -353,6 +353,7 @@ def submit_feedback():
                     data=notification_data,
                     headers=headers,
                     proxies=proxies,
+                    auth=('sitelereuyeol.w5k97@slmail.me', 'klmnklmn.'),
                     timeout=15
                 )
                 print(f"NTFY HTTPS Yanıtı: {resp.status_code} - {resp.text}")
@@ -364,6 +365,7 @@ def submit_feedback():
                     data=notification_data,
                     headers=headers,
                     proxies=proxies,
+                    auth=('sitelereuyeol.w5k97@slmail.me', 'klmnklmn.'),
                     timeout=15
                 )
                 print(f"NTFY HTTP Yanıtı: {resp2.status_code} - {resp2.text}")
