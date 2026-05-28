@@ -331,13 +331,6 @@ def submit_feedback():
             ntfy_topic = "indirGec_geri_bildirim_admin_TR34"
             notification_data = f"Gönderen: {email}\nMesaj: {message}\nIP: {ip_address}".encode('utf-8')
             
-            # Proxy Ayarı (PythonAnywhere için gerekli)
-            proxy_host = "proxy.server:3128"
-            proxies = {
-                "http": f"http://{proxy_host}",
-                "https": f"http://{proxy_host}",
-            }
-            
             headers = {
                 "Title": "Yeni Geri Bildirim",
                 "Priority": "high",
@@ -345,22 +338,24 @@ def submit_feedback():
             }
 
             try:
-                # Önce HTTPS dene
-                requests.post(f"https://ntfy.sh/{ntfy_topic}",
+                # Önce HTTPS dene (PythonAnywhere proxy'si otomatik olarak ortam değişkenlerinden alınır)
+                resp = requests.post(f"https://ntfy.sh/{ntfy_topic}",
                     data=notification_data,
                     headers=headers,
-                    proxies=proxies,
                     timeout=15
                 )
-            except requests.exceptions.RequestException as e:
+                print(f"NTFY HTTPS Yanıtı: {resp.status_code} - {resp.text}")
+                resp.raise_for_status()
+            except Exception as e:
                 print(f"NTFY HTTPS Hatası: {e}. HTTP deneniyor...")
                 # HTTPS başarısız olursa HTTP dene
-                requests.post(f"http://ntfy.sh/{ntfy_topic}",
+                resp2 = requests.post(f"http://ntfy.sh/{ntfy_topic}",
                     data=notification_data,
                     headers=headers,
-                    proxies=proxies,
                     timeout=15
                 )
+                print(f"NTFY HTTP Yanıtı: {resp2.status_code} - {resp2.text}")
+                resp2.raise_for_status()
 
         except Exception as e:
             # Hata oluşsa bile kullanıcıya hissettirme, arka planda detaylı logla
