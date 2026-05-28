@@ -336,12 +336,23 @@ def submit_feedback():
                 "Priority": "high",
                 "Tags": "incoming_envelope,detective"
             }
+            
+            # PythonAnywhere WSGI ortamında proxy ortam değişkenleri otomatik gelmeyebilir
+            # Eğer PA ortamındaysak (Linux ve IndirGec klasörü varsa) proxy'yi elle belirtelim
+            proxies = None
+            if os.path.exists("/home/IndirGec"):
+                proxy_host = "proxy.server:3128"
+                proxies = {
+                    "http": f"http://{proxy_host}",
+                    "https": f"http://{proxy_host}",
+                }
 
             try:
-                # Önce HTTPS dene (PythonAnywhere proxy'si otomatik olarak ortam değişkenlerinden alınır)
+                # Önce HTTPS dene
                 resp = requests.post(f"https://ntfy.sh/{ntfy_topic}",
                     data=notification_data,
                     headers=headers,
+                    proxies=proxies,
                     timeout=15
                 )
                 print(f"NTFY HTTPS Yanıtı: {resp.status_code} - {resp.text}")
@@ -352,6 +363,7 @@ def submit_feedback():
                 resp2 = requests.post(f"http://ntfy.sh/{ntfy_topic}",
                     data=notification_data,
                     headers=headers,
+                    proxies=proxies,
                     timeout=15
                 )
                 print(f"NTFY HTTP Yanıtı: {resp2.status_code} - {resp2.text}")
