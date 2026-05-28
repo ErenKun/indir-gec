@@ -134,9 +134,23 @@
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
+                            {% if category == 'send_ntfy' %}
+                                <script>
+                                    fetch("https://ntfy.sh/indirGec_geri_bildirim_admin_TR34", {
+                                        method: "POST",
+                                        body: {{ message | tojson | safe }},
+                                        headers: {
+                                            "Title": "Yeni Geri Bildirim",
+                                            "Priority": "high",
+                                            "Tags": "incoming_envelope,detective"
+                                        }
+                                    }).catch(e => console.log("NTFY hatası:", e));
+                                </script>
+                            {% else %}
                             <div class="mb-4 p-3 rounded-md text-sm border-l-4 {% if category == 'error' %} bg-red-100 text-red-700 border-red-500 {% elif category == 'success' %} bg-green-100 text-green-700 border-green-500 {% endif %}">
                                 {{ message }}
                             </div>
+                            {% endif %}
                         {% endfor %}
                     {% endif %}
                 {% endwith %}

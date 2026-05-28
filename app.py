@@ -326,56 +326,12 @@ def submit_feedback():
             flash(f'Veritabanı Hatası: {str(e)}', 'error')
             return redirect(url_for('index', _anchor='feedback'))
         
-        # 3. NTFY Bildirimi
-        try:
-            ntfy_topic = "indirGec_geri_bildirim_admin_TR34"
-            notification_data = f"Gönderen: {email}\nMesaj: {message}\nIP: {ip_address}".encode('utf-8')
-            
-            headers = {
-                "Title": "Yeni Geri Bildirim",
-                "Priority": "high",
-                "Tags": "incoming_envelope,detective"
-            }
-            
-            # PythonAnywhere WSGI ortamında proxy ortam değişkenleri otomatik gelmeyebilir
-            # Eğer PA ortamındaysak (Linux ve IndirGec klasörü varsa) proxy'yi elle belirtelim
-            proxies = None
-            if os.path.exists("/home/IndirGec"):
-                proxy_host = "proxy.server:3128"
-                proxies = {
-                    "http": f"http://{proxy_host}",
-                    "https": f"http://{proxy_host}",
-                }
-
-            try:
-                # Önce HTTPS dene
-                resp = requests.post(f"https://ntfy.sh/{ntfy_topic}",
-                    data=notification_data,
-                    headers=headers,
-                    proxies=proxies,
-                    auth=('sitelereuyeol.w5k97@slmail.me', 'klmnklmn.'),
-                    timeout=15
-                )
-                print(f"NTFY HTTPS Yanıtı: {resp.status_code} - {resp.text}")
-                resp.raise_for_status()
-            except Exception as e:
-                print(f"NTFY HTTPS Hatası: {e}. HTTP deneniyor...")
-                # HTTPS başarısız olursa HTTP dene
-                resp2 = requests.post(f"http://ntfy.sh/{ntfy_topic}",
-                    data=notification_data,
-                    headers=headers,
-                    proxies=proxies,
-                    auth=('sitelereuyeol.w5k97@slmail.me', 'klmnklmn.'),
-                    timeout=15
-                )
-                print(f"NTFY HTTP Yanıtı: {resp2.status_code} - {resp2.text}")
-                resp2.raise_for_status()
-
-        except Exception as e:
-            # Hata oluşsa bile kullanıcıya hissettirme, arka planda detaylı logla
-            print(f"NTFY Bildirim Genel Hatası: {str(e)}")
-            import traceback
-            traceback.print_exc()
+        # 3. NTFY Bildirimi (Frontend Üzerinden)
+        # PythonAnywhere proxy IP'si ntfy tarafından engellendiği için (429), 
+        # bildirimi sunucu yerine formu dolduran ziyaretçinin kendi tarayıcısından (JS ile) göndereceğiz.
+        # Bunun için bilgileri özel bir flash mesajıyla frontend'e aktarıyoruz.
+        notification_data = f"Gönderen: {email}\\nMesaj: {message}\\nIP: {ip_address}"
+        flash(notification_data, 'send_ntfy')
 
         flash('Geri bildiriminiz için teşekkürler!', 'success')
     else:
